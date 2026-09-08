@@ -6,7 +6,7 @@
 
 https://masao172.github.io/metano-endo-clinical-tools/
 
-公開画面上部の著作権表示の下に「端末別利用マニュアル（PDF）」ボタンを設置しています。PDF表示は「× 閉じてツールに戻る」で閉じられます。
+公開画面上部の著作権表示の中に「端末別利用マニュアルを見る」ボタンを設置しています。マニュアルはPDF埋め込みではなく、各ページを画像として画面内に縦に並べるビューアで表示します。iPhone・Androidでも上下スクロールでき、「× 閉じてツールに戻る」で元のツールへ戻れます。原本PDFを別画面で開くリンクも残しています。
 
 ## 主な機能
 
@@ -55,5 +55,11 @@ Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC B
 
 ## 同梱ファイル
 
-- `manual.pdf`: 端末別利用マニュアル
+- `manual.pdf`: 端末別利用マニュアル原本
+- `manual-page-1.jpg` ～ `manual-page-5.jpg`: 画面内スクロールビューア用ページ画像
 - `qr-code.png`: 公開URLのQRコード
+
+
+## マニュアル表示の更新について
+
+マニュアル画像をオフラインでも表示できるようService Workerのキャッシュ対象にしています。以前のPWA版をインストール済みの端末では、GitHub更新後に一度オンラインで再読み込みまたはWebアプリを再起動すると新版へ更新されます。

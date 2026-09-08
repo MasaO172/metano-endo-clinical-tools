@@ -1,9 +1,14 @@
-var CACHE_NAME = 'metano-endo-clinical-tools-v2-manual';
+var CACHE_NAME = 'metano-endo-clinical-tools-v3-image-manual';
 var CORE_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './manual.pdf',
+  './manual-page-1.jpg',
+  './manual-page-2.jpg',
+  './manual-page-3.jpg',
+  './manual-page-4.jpg',
+  './manual-page-5.jpg',
   './qr-code.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
