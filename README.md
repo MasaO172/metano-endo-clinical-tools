@@ -2,6 +2,12 @@
 
 糖尿病・代謝・内分泌領域を中心に、臨床計算、病期・リスク分類、鑑別診断の補助、負荷試験判定、栄養管理などを1つのブラウザ画面で扱う医療従事者向けツールです。
 
+## 公開URL
+
+https://masao172.github.io/metano-endo-clinical-tools/
+
+公開画面上部の著作権表示の下に「端末別利用マニュアル（PDF）」ボタンを設置しています。PDF表示は「× 閉じてツールに戻る」で閉じられます。
+
 ## 主な機能
 
 - 糖代謝・インスリン分泌：HOMA、75gOGTT、グルカゴン負荷、低血糖鑑別など
@@ -45,3 +51,9 @@ Chromeでサイトを開き、メニューの「アプリをインストール�
 © 2026 大平征宏
 
 Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)
+
+
+## 同梱ファイル
+
+- `manual.pdf`: 端末別利用マニュアル
+- `qr-code.png`: 公開URLのQRコード
