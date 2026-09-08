@@ -1,0 +1,17 @@
+{
+  "name": "代謝・内分泌 臨床計算・診療支援ツール",
+  "short_name": "代謝内分泌Tools",
+  "description": "糖尿病・代謝・内分泌領域を中心とした医療者向け臨床計算・鑑別・診療支援ツール",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f0f4f8",
+  "theme_color": "#0f3d63",
+  "orientation": "any",
+  "icons": [
+    {"src":"icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
+    {"src":"icons/icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+  ]
+}
