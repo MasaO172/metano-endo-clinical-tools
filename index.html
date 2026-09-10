@@ -100,13 +100,17 @@ select#calc-select:focus{border-color:var(--accent);}
 label{font-size:.8rem;font-weight:500;color:var(--sub);}
 label .req{color:var(--ng);margin-left:1px;}
 .inp-w{position:relative;display:flex;align-items:center;}
-input[type=number]{width:100%;padding:.62rem 3.6rem .62rem .8rem;
+input[type=number],input.lab-number{width:100%;padding:.62rem 3.6rem .62rem .8rem;
   font-family:var(--mono);font-size:1rem;border:1.5px solid var(--border);
   border-radius:8px;color:var(--text);outline:none;transition:border-color .14s;
   -moz-appearance:textfield;background:#fff;}
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;}
-input[type=number]:focus{border-color:var(--accent);}
+input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
+.limit-hint{font-size:.70rem;line-height:1.45;color:var(--sub);min-height:1em;}
+.limit-hint.detect-low,.limit-hint.detect-high{color:#92400e;font-weight:600;}
+.limit-guide{font-size:.74rem;line-height:1.6;color:var(--sub);background:#f8fafc;
+  border:1px dashed var(--border);border-radius:8px;padding:.55rem .75rem;margin:.35rem 0 .75rem;}
 .unit-lbl{position:absolute;right:.7rem;font-size:.68rem;color:var(--sub);
   font-weight:600;pointer-events:none;white-space:nowrap;}
 
@@ -2040,7 +2044,7 @@ const CALCS = [
   },
   {
     id:'captopril', title:'カプトプリル負荷試験（原発性アルドステロン症）',
-    desc:'カプトプリル負荷前、60分、90分のPACとPRAまたはARCからARRを計算し、日本内分泌学会 原発性アルドステロン症診療ガイドライン2021のCLEIA基準で判定します。PRAではARR≥200、ARCではARR≥40が陽性、各々100〜200／20〜40は暫定陽性（境界域）です。',
+    desc:'カプトプリル負荷前、60分、90分のPACとPRAまたはARCからARRを計算し、日本内分泌学会 原発性アルドステロン症診療ガイドライン2021のCLEIA基準で判定します。PRAではARR≥200、ARCではARR≥40が陽性、各々100〜200／20〜40は暫定陽性（境界域）です。レニン等が測定感度未満の場合は <0.2、測定上限超の場合は 15< または >15 の形式で入力できます。',
     inputs:[
       {label:'レニン測定法',type:'select',options:[{value:'pra',label:'PRA（ng/mL/h）'},{value:'arc',label:'ARC（pg/mL）'}]},
       {label:'PAC 0分（CLEIA）',unit:'pg/mL',ph:'100'},
@@ -2061,16 +2065,28 @@ const CALCS = [
     },
     compute:(v)=>{
       const type=v[0], pos=type==='pra'?200:40, border=type==='pra'?100:20, denom=type==='pra'?'PRA':'ARC';
-      const classify=(arr)=>arr>=pos?'陽性':arr>=border?'暫定陽性（境界域）':'陰性域';
-      const clsKey=(arr)=>arr>=pos?2:arr>=border?1:0;
-      const rows=[]; const all=[];
-      const r0=v[1]/v[2];
-      rows.push({label:'ARR 0分',value:r0,decimals:1,unit:`PAC/${denom}`});
-      if(!isNaN(v[3])){const r=v[3]/v[4];all.push(r);rows.push({label:'ARR 60分',value:r,decimals:1,unit:`PAC/${denom}`});rows.push({label:'60分判定',text:classify(r)});}
-      if(!isNaN(v[5])){const r=v[5]/v[6];all.push(r);rows.push({label:'ARR 90分',value:r,decimals:1,unit:`PAC/${denom}`});rows.push({label:'90分判定',text:classify(r)});}
-      const maxKey=Math.max(...all.map(clsKey)); const overall=maxKey===2?'陽性':maxKey===1?'暫定陽性（境界域）':'陰性域';
-      const cls=maxKey===2?'hi':maxKey===1?'brd':'ok';
-      return {sections:[{title:'カプトプリル負荷後ARR',results:rows},{title:'総合判定',results:[{label:'CCT判定',text:overall,wide:true},{label:'使用基準',text:type==='pra'?'ARR ≥200陽性／100〜200境界':'ARR ≥40陽性／20〜40境界',wide:true}]}],interpretation:{cls,html:`<strong>${overall}</strong><br>日本内分泌学会2021のCLEIAによるカプトプリル負荷試験基準を使用しています。60分または90分のARRで判定します。CCTではPACの絶対値は新基準の必須条件ではありません。<br>降圧薬、低K血症、腎機能、採血条件などがPAC/レニンに影響します。ACE阻害薬による低血圧やまれな血管浮腫にも注意し、検査環境と患者背景を含めて最終判断してください。`}};
+      const rows=[], judgments=[];
+      function addArr(label,pacIdx,reninIdx,judgeLabel,includeOverall){
+        const iv=ratioInterval(getInputMeta(pacIdx),getInputMeta(reninIdx));
+        const j=classifyArrInterval(iv,pos,border);
+        rows.push({label:'ARR '+label,text:iv.text,unit:`PAC/${denom}`});
+        if(judgeLabel) rows.push({label:judgeLabel,text:j.label});
+        if(includeOverall) judgments.push(j);
+      }
+      addArr('0分',1,2,null,false);
+      if(!isNaN(v[3])) addArr('60分',3,4,'60分判定',true);
+      if(!isNaN(v[5])) addArr('90分',5,6,'90分判定',true);
+      let overall='陰性域',cls='ok';
+      if(judgments.some(j=>j.level===2)){overall='陽性';cls='hi';}
+      else if(judgments.some(j=>j.level===3)){overall='判定保留（測定限界値を含む）';cls='brd';}
+      else if(judgments.some(j=>j.level===1)){overall='暫定陽性（境界域）';cls='brd';}
+      return {sections:[
+        {title:'カプトプリル負荷後ARR',results:rows},
+        {title:'総合判定',results:[
+          {label:'CCT判定',text:overall,wide:true},
+          {label:'使用基準',text:type==='pra'?'ARR ≥200陽性／100〜200境界':'ARR ≥40陽性／20〜40境界',wide:true}
+        ]}
+      ],interpretation:{cls,html:`<strong>${overall}</strong><br>日本内分泌学会2021のCLEIAによるカプトプリル負荷試験基準を使用しています。60分または90分のARRで判定します。CCTではPACの絶対値は新基準の必須条件ではありません。<br>レニンが &lt;0.2 のような測定感度未満の場合、ARRは一点値ではなく「&gt;○○」として扱います。その下限だけで陽性基準を超える場合は陽性と判定し、基準をまたぐ可能性がある場合は判定保留とします。<br>降圧薬、低K血症、腎機能、採血条件などがPAC/レニンに影響します。ACE阻害薬による低血圧やまれな血管浮腫にも注意し、検査環境と患者背景を含めて最終判断してください。`}};
     }
   },
   {
@@ -3270,6 +3286,93 @@ const CALCS = [
   },
 ];
 
+// ============================================================
+// 測定感度未満・測定上限超の入力対応
+// 例: <0.2 = 実値は0.2未満 / 15< または >15 = 実値は15超
+// ============================================================
+let currentInputMeta = [];
+
+function parseLimitedNumber(raw){
+  let s = String(raw == null ? '' : raw).trim();
+  if(s==='') return {value:NaN, relation:null, raw:''};
+  s = s.replace(/，/g,',').replace(/,/g,'')
+       .replace(/＜/g,'<').replace(/＞/g,'>')
+       .replace(/≦|≤/g,'<=').replace(/≧|≥/g,'>=');
+  const num = '([+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)';
+  let m;
+  m = s.match(new RegExp('^<\\s*=?\\s*'+num+'$'));
+  if(m) return {value:parseFloat(m[1]), relation:'lt', raw:raw, display:'<'+m[1]};
+  m = s.match(new RegExp('^>\\s*=?\\s*'+num+'$'));
+  if(m) return {value:parseFloat(m[1]), relation:'gt', raw:raw, display:'>'+m[1]};
+  m = s.match(new RegExp('^'+num+'\\s*<\\s*=?$'));
+  if(m) return {value:parseFloat(m[1]), relation:'gt', raw:raw, display:'>'+m[1]};
+  m = s.match(new RegExp('^'+num+'\\s*>\\s*=?$'));
+  if(m) return {value:parseFloat(m[1]), relation:'lt', raw:raw, display:'<'+m[1]};
+  if(new RegExp('^'+num+'$').test(s)) return {value:parseFloat(s), relation:null, raw:raw, display:s};
+  return {value:NaN, relation:'invalid', raw:raw, display:s};
+}
+function getInputMeta(i){
+  return currentInputMeta && currentInputMeta[i] ? currentInputMeta[i] : {value:NaN,relation:null,raw:''};
+}
+function updateLimitHint(i){
+  const el=document.getElementById('f'+i), hint=document.getElementById('limit-hint-'+i);
+  if(!el||!hint) return;
+  const p=parseLimitedNumber(el.value);
+  hint.className='limit-hint';
+  if(p.relation==='lt'){hint.className+=' detect-low';hint.textContent='測定感度未満として認識：'+p.display;}
+  else if(p.relation==='gt'){hint.className+=' detect-high';hint.textContent='測定上限超として認識：'+p.display;}
+  else if(p.relation==='invalid'){hint.textContent='数値、<0.2、15<、>15 の形式で入力してください';}
+  else hint.textContent='';
+}
+function limitedInputNotice(c,metas){
+  const items=[];
+  metas.forEach((m,i)=>{
+    if(!m||(m.relation!=='lt'&&m.relation!=='gt')) return;
+    const inp=c.inputs[i]; if(!inp||inp.type==='select') return;
+    const unit=inp.unit?' '+inp.unit:'';
+    const kind=m.relation==='lt'?'測定感度未満':'測定上限超';
+    items.push(inp.label+'：'+m.display+unit+'（'+kind+'）');
+  });
+  if(!items.length) return '';
+  return '<strong>🧪 測定限界値を含む入力</strong><br>'+items.join('<br>')
+    +'<br>測定限界値を含む項目は真の値が一点に定まりません。下記の計算・閾値判定は参考として解釈してください。'
+    +'カプトプリル負荷試験のARRは、可能な範囲（&gt; / &lt;）を考慮して判定します。';
+}
+function appendLimitedNotice(out,c,metas){
+  const note=limitedInputNotice(c,metas); if(!note) return out;
+  if(out.interpretation) out.interpretation.html+='<br><br>'+note;
+  else out.interpretation={cls:'brd',html:note};
+  return out;
+}
+function positiveInterval(meta){
+  if(!meta||isNaN(meta.value)) return {lo:NaN,hi:NaN};
+  if(meta.relation==='lt') return {lo:0,hi:meta.value};
+  if(meta.relation==='gt') return {lo:meta.value,hi:Infinity};
+  return {lo:meta.value,hi:meta.value};
+}
+function ratioInterval(numMeta,denMeta){
+  const n=positiveInterval(numMeta),d=positiveInterval(denMeta);
+  if(isNaN(n.lo)||isNaN(d.lo)) return {lo:NaN,hi:NaN,text:'判定不能'};
+  const lo=d.hi===Infinity?0:n.lo/d.hi;
+  const hi=d.lo===0?Infinity:n.hi/d.lo;
+  let t;
+  if(isFinite(lo)&&isFinite(hi)&&Math.abs(lo-hi)<1e-12)t=lo.toFixed(1);
+  else if(lo>0&&hi===Infinity)t='>'+lo.toFixed(1);
+  else if(lo===0&&isFinite(hi))t='<'+hi.toFixed(1);
+  else if(lo>0&&isFinite(hi))t=lo.toFixed(1)+'〜'+hi.toFixed(1);
+  else t='範囲判定不能';
+  return {lo:lo,hi:hi,text:t};
+}
+function classifyArrInterval(iv,pos,border){
+  if(isNaN(iv.lo)||isNaN(iv.hi)) return {level:-1,label:'判定不能'};
+  if(iv.lo>=pos) return {level:2,label:'陽性'};
+  if(iv.hi<border) return {level:0,label:'陰性域'};
+  if(iv.lo>=border&&iv.hi<pos) return {level:1,label:'暫定陽性（境界域）'};
+  if(iv.lo>=border&&iv.hi>=pos) return {level:3,label:'判定保留（境界域〜陽性）'};
+  if(iv.lo<border&&iv.hi<pos) return {level:3,label:'判定保留（陰性域〜境界域）'};
+  return {level:3,label:'判定保留（陰性域〜陽性）'};
+}
+
 function renderForm(id){
   currentCalc = id;
   document.getElementById('res-card').classList.add('hidden');
@@ -3294,11 +3397,12 @@ function renderForm(id){
             + `<select id="f${i}" style="width:100%;padding:.62rem .8rem;font-size:.92rem;border:1.5px solid var(--border);border-radius:8px;color:var(--text);background:#fff;font-family:inherit;">${opts}</select></div>`;
     } else {
       html += `<div class="field"><label>${inp.label}${req}</label>`
-            + `<div class="inp-w"><input type="number" id="f${i}" step="any" placeholder="例: ${inp.ph}">`
-            + `<span class="unit-lbl">${inp.unit||''}</span></div></div>`;
+            + `<div class="inp-w"><input type="text" class="lab-number" id="f${i}" inputmode="decimal" autocomplete="off" placeholder="例: ${inp.ph}" oninput="updateLimitHint(${i})">`
+            + `<span class="unit-lbl">${inp.unit||''}</span></div><div class="limit-hint" id="limit-hint-${i}"></div></div>`;
     }
   });
   html += '</div>';
+  html += '<div class="limit-guide">測定限界値も入力できます：<strong>&lt;0.2</strong> →「0.2未満」、<strong>15&lt;</strong> または <strong>&gt;15</strong> →「15超」と認識します。測定限界を含む計算は結果に注意表示します。</div>';
   area.innerHTML = html;
 }
 
@@ -3347,12 +3451,15 @@ function renderResult(out){
 function runCalc(){
   if(currentCalc==='homa2'){ calculateHoma2(); return; }
   const c = CALCS.find(x=>x.id===currentCalc);
-  const v = c.inputs.map((inp,i)=> inp.type==='select'
-    ? document.getElementById('f'+i).value
-    : parseFloat(document.getElementById('f'+i).value));
-  const errMsg = c.validate(v);
+  currentInputMeta = [];
+  const v = c.inputs.map((inp,i)=>{
+    if(inp.type==='select'){ currentInputMeta[i]=null; return document.getElementById('f'+i).value; }
+    const p=parseLimitedNumber(document.getElementById('f'+i).value);
+    currentInputMeta[i]=p; return p.value;
+  });
+  const errMsg=c.validate(v);
   if(errMsg){ showErr(errMsg); return; }
-  renderResult(c.compute(v));
+  renderResult(appendLimitedNotice(c.compute(v),c,currentInputMeta));
 }
 
 function resetAll(){
