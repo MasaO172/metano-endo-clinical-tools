@@ -99,7 +99,13 @@ select#calc-select:focus{border-color:var(--accent);}
 .field{display:flex;flex-direction:column;gap:.35rem;}
 label{font-size:.8rem;font-weight:500;color:var(--sub);}
 label .req{color:var(--ng);margin-left:1px;}
-.inp-w{position:relative;display:flex;align-items:center;}
+.inp-w{position:relative;display:flex;align-items:stretch;}
+.inp-w input.lab-number{flex:1 1 auto;min-width:0;}
+.limit-rel{flex:0 0 58px;width:58px;padding:.56rem .18rem;border:1.5px solid var(--border);
+  border-right:0;border-radius:8px 0 0 8px;background:#f8fafc;color:var(--primary-dk);
+  font-family:inherit;font-size:1rem;font-weight:700;text-align:center;outline:none;cursor:pointer;}
+.limit-rel:focus{border-color:var(--accent);}
+.inp-w.has-limit input.lab-number{border-radius:0 8px 8px 0;}
 input[type=number],input.lab-number{width:100%;padding:.62rem 3.6rem .62rem .8rem;
   font-family:var(--mono);font-size:1rem;border:1.5px solid var(--border);
   border-radius:8px;color:var(--text);outline:none;transition:border-color .14s;
@@ -2044,7 +2050,7 @@ const CALCS = [
   },
   {
     id:'captopril', title:'カプトプリル負荷試験（原発性アルドステロン症）',
-    desc:'カプトプリル負荷前、60分、90分のPACとPRAまたはARCからARRを計算し、日本内分泌学会 原発性アルドステロン症診療ガイドライン2021のCLEIA基準で判定します。PRAではARR≥200、ARCではARR≥40が陽性、各々100〜200／20〜40は暫定陽性（境界域）です。レニン等が測定感度未満の場合は <0.2、測定上限超の場合は 15< または >15 の形式で入力できます。',
+    desc:'カプトプリル負荷前、60分、90分のPACとPRAまたはARCからARRを計算し、日本内分泌学会 原発性アルドステロン症診療ガイドライン2021のCLEIA基準で判定します。PRAではARR≥200、ARCではARR≥40が陽性、各々100〜200／20〜40は暫定陽性（境界域）です。レニン等が測定感度未満・測定上限超の場合は、スマートフォンでは数値欄左の＜／＞を選択して入力できます。PCでは <0.2、15<、>15 の直接入力にも対応します。',
     inputs:[
       {label:'レニン測定法',type:'select',options:[{value:'pra',label:'PRA（ng/mL/h）'},{value:'arc',label:'ARC（pg/mL）'}]},
       {label:'PAC 0分（CLEIA）',unit:'pg/mL',ph:'100'},
@@ -3311,17 +3317,37 @@ function parseLimitedNumber(raw){
   if(new RegExp('^'+num+'$').test(s)) return {value:parseFloat(s), relation:null, raw:raw, display:s};
   return {value:NaN, relation:'invalid', raw:raw, display:s};
 }
+function supportsLimitSelector(inp){
+  if(!inp || inp.type==='select') return false;
+  const u=String(inp.unit||'');
+  // 検査室で測定限界（感度未満／上限超）が付き得る主な検査単位。
+  // 身長・体重・年齢・投与量などの一般入力には表示しない。
+  return /^(?:%|U\/L|g\/dL|g\/gCr|mEq\/L|mEq\/gCr|mIU\/mL|mOsm\/kg|mg\/dL|mg\/gCr|mg\/mg|mmol\/L|ng\/dL|ng\/mL|ng\/mL\/h|pg\/mL|pmol\/L|μIU\/mL|μU\/mL|μg\/dL|万\/μL|PRA\/ARC|施設単位|選択単位)$/.test(u);
+}
+function readLimitedField(i){
+  const el=document.getElementById('f'+i);
+  const rel=document.getElementById('rel'+i);
+  const p=parseLimitedNumber(el ? el.value : '');
+  if(!rel || !p || isNaN(p.value) || p.relation==='invalid') return p;
+  // PCで <0.2 / 15< / >15 と直接入力した場合は、その記号も引き続き認識。
+  // 左側セレクタで ＜/＞ を選んだ場合はセレクタを優先する。
+  if(rel.value==='lt' || rel.value==='gt'){
+    const mark=rel.value==='lt'?'<':'>';
+    return {value:p.value,relation:rel.value,raw:p.raw,display:mark+String(p.value),viaSelector:true};
+  }
+  return p;
+}
 function getInputMeta(i){
   return currentInputMeta && currentInputMeta[i] ? currentInputMeta[i] : {value:NaN,relation:null,raw:''};
 }
 function updateLimitHint(i){
   const el=document.getElementById('f'+i), hint=document.getElementById('limit-hint-'+i);
   if(!el||!hint) return;
-  const p=parseLimitedNumber(el.value);
+  const p=readLimitedField(i);
   hint.className='limit-hint';
   if(p.relation==='lt'){hint.className+=' detect-low';hint.textContent='測定感度未満として認識：'+p.display;}
   else if(p.relation==='gt'){hint.className+=' detect-high';hint.textContent='測定上限超として認識：'+p.display;}
-  else if(p.relation==='invalid'){hint.textContent='数値、<0.2、15<、>15 の形式で入力してください';}
+  else if(p.relation==='invalid'){hint.textContent='数値を入力してください。PCでは <0.2 / 15< / >15 の直接入力もできます。';}
   else hint.textContent='';
 }
 function limitedInputNotice(c,metas){
@@ -3389,6 +3415,7 @@ function renderForm(id){
   const c = CALCS.find(x=>x.id===id);
   document.getElementById('calc-desc').textContent = c.desc;
   let html = '<div class="fields">';
+  let hasLimitField = false;
   c.inputs.forEach((inp,i)=>{
     const req = inp.optional ? '' : ' <span class="req">*</span>';
     if(inp.type==='select'){
@@ -3396,13 +3423,19 @@ function renderForm(id){
       html += `<div class="field"><label>${inp.label}${req}</label>`
             + `<select id="f${i}" style="width:100%;padding:.62rem .8rem;font-size:.92rem;border:1.5px solid var(--border);border-radius:8px;color:var(--text);background:#fff;font-family:inherit;">${opts}</select></div>`;
     } else {
+      const lim = supportsLimitSelector(inp);
+      if(lim) hasLimitField = true;
       html += `<div class="field"><label>${inp.label}${req}</label>`
-            + `<div class="inp-w"><input type="text" class="lab-number" id="f${i}" inputmode="decimal" autocomplete="off" placeholder="例: ${inp.ph}" oninput="updateLimitHint(${i})">`
+            + `<div class="inp-w${lim?' has-limit':''}">`
+            + (lim ? `<select class="limit-rel" id="rel${i}" aria-label="${inp.label}の測定限界" onchange="updateLimitHint(${i})"><option value="eq">＝</option><option value="lt">＜</option><option value="gt">＞</option></select>` : '')
+            + `<input type="text" class="lab-number" id="f${i}" inputmode="decimal" autocomplete="off" placeholder="例: ${inp.ph}" oninput="updateLimitHint(${i})">`
             + `<span class="unit-lbl">${inp.unit||''}</span></div><div class="limit-hint" id="limit-hint-${i}"></div></div>`;
     }
   });
   html += '</div>';
-  html += '<div class="limit-guide">測定限界値も入力できます：<strong>&lt;0.2</strong> →「0.2未満」、<strong>15&lt;</strong> または <strong>&gt;15</strong> →「15超」と認識します。測定限界を含む計算は結果に注意表示します。</div>';
+  if(hasLimitField){
+    html += '<div class="limit-guide"><strong>測定限界値：</strong>スマートフォンでは数値欄の左にある <strong>＝／＜／＞</strong> を選んでから数字を入力してください。例：<strong>＜ + 0.2</strong> →「0.2未満（測定感度未満）」、<strong>＞ + 15</strong> →「15超（測定上限超）」。PCでは従来どおり <strong>&lt;0.2</strong>、<strong>15&lt;</strong>、<strong>&gt;15</strong> の直接入力も認識します。</div>';
+  }
   area.innerHTML = html;
 }
 
@@ -3454,7 +3487,7 @@ function runCalc(){
   currentInputMeta = [];
   const v = c.inputs.map((inp,i)=>{
     if(inp.type==='select'){ currentInputMeta[i]=null; return document.getElementById('f'+i).value; }
-    const p=parseLimitedNumber(document.getElementById('f'+i).value);
+    const p=readLimitedField(i);
     currentInputMeta[i]=p; return p.value;
   });
   const errMsg=c.validate(v);

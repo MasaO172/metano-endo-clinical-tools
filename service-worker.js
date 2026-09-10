@@ -1,4 +1,4 @@
-var CACHE_NAME = 'metano-endo-clinical-tools-v4-lab-limits';
+var CACHE_NAME = 'metano-endo-clinical-tools-v5-mobile-lab-limits';
 var CORE_ASSETS = [
   './',
   './index.html',
