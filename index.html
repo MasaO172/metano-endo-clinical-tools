@@ -3595,14 +3595,14 @@ const HOMA2_FORM_HTML = `
     <div class="field">
       <label>空腹時血糖値 <span class="req">*</span></label>
       <div class="inp-w">
-        <input type="number" id="h2-glu" step="0.1" min="0" placeholder="例: 88">
+        <input type="text" class="lab-number" id="h2-glu" inputmode="decimal" autocomplete="off" placeholder="例: 88">
         <span class="unit-lbl" id="h2-g-unit">mg/dL</span>
       </div>
     </div>
     <div class="field">
       <label id="h2-p-label">空腹時インスリン (RIA) <span class="req">*</span></label>
       <div class="inp-w">
-        <input type="number" id="h2-pep" step="0.1" min="0" placeholder="例: 7.7">
+        <input type="text" class="lab-number" id="h2-pep" inputmode="decimal" autocomplete="off" placeholder="例: 7.7">
         <span class="unit-lbl" id="h2-p-unit">μU/mL</span>
       </div>
     </div>
