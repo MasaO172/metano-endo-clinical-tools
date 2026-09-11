@@ -1,4 +1,4 @@
-var CACHE_NAME = 'metano-endo-clinical-tools-v5-mobile-lab-limits';
+var CACHE_NAME = 'metano-endo-clinical-tools-v6-20260911-user-html';
 var CORE_ASSETS = [
   './',
   './index.html',
@@ -14,7 +14,9 @@ var CORE_ASSETS = [
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
-  './icons/favicon.ico'
+  './icons/favicon.ico',
+  './icons/favicon-32.png',
+  './icons/favicon-48.png'
 ];
 
 self.addEventListener('install', function(event) {

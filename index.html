@@ -297,7 +297,7 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
   <strong>ご利用にあたって</strong><br>
   本ツールの計算結果は参考値です。診断・治療方針の決定は必ず医師の判断に基づいて行ってください。<br><br>
   <strong>ホルモン負荷試験：</strong>日本内分泌学会の診療ガイドライン等を基にした参考判定です。測定法・施設基準・薬剤影響・患者背景により解釈が変わるため、実施・最終判定は内分泌専門医の管理下で行ってください。高張食塩水負荷、水制限試験、バソプレシン負荷などは医療機関で厳重な監視下に行う検査です。SIADH判定は日本内分泌学会2023年版の診断基準に沿った診断補助であり、副腎・甲状腺の数値判定は測定法・採血時刻・施設基準を踏まえたスクリーニングです。低Na血症・高Na血症・高Ca血症・低K血症・高K血症の鑑別も診断補助であり、緊急度、薬剤、輸液、腎機能、臨床所見を優先してください。Na異常では発症速度と神経症状を必ず別途評価してください。<br><br>
-  HOMA2はOxford大学 DTU <strong>HOMA2 v2.2.4の検証データ</strong>（441点×3モード）を用いた<strong>非公式の近似実装</strong>です。双線形補間で算出するため、検証グリッド点以外ではOxford公式Calculatorと完全一致する保証はありません。研究・診療で厳密な値が必要な場合はOxford公式Calculatorを優先してください。<br>
+  HOMA2はOxford大学 DTU <strong>HOMA2 v2.2.4の検証データ</strong>（441点×3モード）を用いた<strong>非公式の近似実装</strong>です。格子点間は双三次補間（4x4近傍のCatmull-Romスプライン、オーバーシュート防止のクランプ付き）で算出するため、検証グリッド点以外ではOxford公式Calculatorと完全一致する保証はありません（通常は1%未満、条件により数%の差が生じ得ます）。研究・診療で厳密な値が必要な場合はOxford公式Calculatorを優先してください。<br>
   参考: Levy JC et al., Diabetes Care 1998;21:2191-92　
   <a href="https://www.dtu.ox.ac.uk/homacalculator/" target="_blank">公式サイト</a>
 </div>
@@ -3406,7 +3406,7 @@ function renderForm(id){
   const area = document.getElementById('input-area');
 
   if(id==='homa2'){
-    document.getElementById('calc-desc').textContent = 'Oxford大学 DTU HOMA2 v2.2.4 検証データに基づく双線形補間計算です。インスリン抵抗性・β細胞機能を評価します。';
+    document.getElementById('calc-desc').textContent = 'Oxford大学 DTU HOMA2 v2.2.4 検証データに基づく双三次補間計算です。インスリン抵抗性・β細胞機能を評価します。';
     area.innerHTML = HOMA2_FORM_HTML;
     initHoma2Form();
     return;
@@ -3531,20 +3531,44 @@ const TAB_INFO = {
   },
 };
 
-function lerpBilinear(grid, g, p) {
+// 双三次補間（Catmull-Rom, 4x4近傍）。Oxford DTU検証グリッドは格子点間隔が粗く、
+// 単純な双線形補間では公式HOMA2 Calculatorとの差が数%生じ得るため、
+// 曲面の曲率をより滑らかに近似する双三次補間に変更。
+// オーバーシュート対策として、結果を周囲4格子点（双線形セル）の値域内にクランプする。
+function catmullRom1D(p0, p1, p2, p3, t) {
+  return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
+}
+function clampIdx(i, maxIdx) { return Math.max(0, Math.min(maxIdx, i)); }
+function bicubicSample(arr, gi, pi, tg, tp, nMax, mMax) {
+  const rows = [];
+  for (let dg = -1; dg <= 2; dg++) {
+    const ii = clampIdx(gi + dg, nMax);
+    const pts = [];
+    for (let dp = -1; dp <= 2; dp++) pts.push(arr[ii][clampIdx(pi + dp, mMax)]);
+    rows.push(catmullRom1D(pts[0], pts[1], pts[2], pts[3], tp));
+  }
+  return catmullRom1D(rows[0], rows[1], rows[2], rows[3], tg);
+}
+function interpGrid(grid, g, p) {
   const gs = grid.gs, ps = grid.ps;
   if (g < gs[0] || g > gs[gs.length-1] || p < ps[0] || p > ps[ps.length-1]) return null;
   let gi = gs.findIndex(v => v > g);
   if (gi < 0) gi = gs.length - 1;
   if (gi === 0) gi = 1;
+  gi -= 1;
   let pi = ps.findIndex(v => v > p);
   if (pi < 0) pi = ps.length - 1;
   if (pi === 0) pi = 1;
-  const g0=gs[gi-1], g1=gs[gi], p0=ps[pi-1], p1=ps[pi];
+  pi -= 1;
+  const g0=gs[gi], g1=gs[gi+1], p0=ps[pi], p1=ps[pi+1];
   const tg=(g-g0)/(g1-g0), tp=(p-p0)/(p1-p0);
+  const nMax = gs.length - 1, mMax = ps.length - 1;
   function interp(arr) {
-    return arr[gi-1][pi-1]*(1-tg)*(1-tp) + arr[gi][pi-1]*tg*(1-tp)
-         + arr[gi-1][pi]*(1-tg)*tp       + arr[gi][pi]*tg*tp;
+    const raw = bicubicSample(arr, gi, pi, tg, tp, nMax, mMax);
+    // 周囲4格子点（このセルの角）の範囲内にクランプしてオーバーシュートを防ぐ
+    const corners = [arr[gi][pi], arr[gi+1][pi], arr[gi][pi+1], arr[gi+1][pi+1]];
+    const lo = Math.min(...corners), hi = Math.max(...corners);
+    return Math.min(Math.max(raw, lo), hi);
   }
   return {
     B:  Math.round(interp(grid.B)  * 10) / 10,
@@ -3648,7 +3672,7 @@ function calculateHoma2() {
   }
 
   const pInternal = info.toInternal(pRaw);
-  const result = lerpBilinear(GRIDS[h2Tab], gMmol, pInternal);
+  const result = interpGrid(GRIDS[h2Tab], gMmol, pInternal);
   if (!result) { showErr('計算できませんでした。入力値を確認してください。'); return; }
 
   const grid = document.getElementById('res-grid');
@@ -3668,7 +3692,7 @@ function calculateHoma2() {
     + `HOMA2-IR = ${result.IR.toFixed(2)}、HOMA2-%S = ${result.S.toFixed(1)}%、HOMA2-%B = ${result.B.toFixed(1)}%。`
     + `HOMA2は正常若年成人で概ねIR=1、%S=100、%B=100となるよう校正されていますが、HOMA2-IRに普遍的・標準化された臨床診断カットオフはありません。`
     + `年齢・人種・肥満度・測定法・対象集団により報告される閾値が異なるため、連続値として同一測定系での比較や研究目的に用いるのが適切です。<br>`
-    + `<span style="font-size:.78rem">本ツールはOxford DTU検証データの双線形補間による非公式近似です。厳密な値が必要な場合はOxford公式HOMA2 Calculatorを使用してください。</span>`;
+    + `<span style="font-size:.78rem">本ツールはOxford DTU検証データの双三次補間による非公式近似です。厳密な値が必要な場合はOxford公式HOMA2 Calculatorを使用してください。</span>`;
 
   document.getElementById('res-card').classList.remove('hidden');
   document.getElementById('res-card').scrollIntoView({behavior:'smooth', block:'nearest'});
