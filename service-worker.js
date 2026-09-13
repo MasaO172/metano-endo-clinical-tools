@@ -1,4 +1,4 @@
-var CACHE_NAME = 'metano-endo-clinical-tools-v7-20260911-homa2-decimal-keyboard';
+var CACHE_NAME = 'metano-endo-clinical-tools-v8-20260913-clinical-expansion';
 var CORE_ASSETS = [
   './',
   './index.html',

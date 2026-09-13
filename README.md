@@ -74,3 +74,7 @@ Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC B
 ## マニュアル表示の更新について
 
 マニュアル画像をオフラインでも表示できるようService Workerのキャッシュ対象にしています。以前のPWA版をインストール済みの端末では、GitHub更新後に一度オンラインで再読み込みまたはWebアプリを再起動すると新版へ更新されます。
+
+
+## 2026-09-13 更新
+CrCl、eGFR、尿浸透圧、JCS/GCS、Harris–Benedict TEE、久山町/吹田スコア、自由水/体液欠乏量、AVS、NFS、中尾式、CPI+SUITを追加。

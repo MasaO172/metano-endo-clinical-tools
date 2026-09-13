@@ -191,7 +191,7 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
 <header>
   <div class="badge">🩺 臨床計算ツール集</div>
   <h1>代謝・内分泌 臨床計算・診療支援ツール</h1>
-  <p class="subtitle">HOMA2（Oxford DTU検証データに基づく近似）を含む全43項目に対応</p>
+  <p class="subtitle">HOMA2（Oxford DTU検証データに基づく近似）を含む全56項目に対応</p>
 </header>
 
 <div class="copyright-box">
@@ -211,7 +211,7 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
     <optgroup label="糖代謝・インスリン分泌">
       <option value="homa-beta">HOMA-β / HOMA-IR（簡易法）</option>
       <option value="homa2">HOMA2（Oxford DTU検証データに基づく近似）</option>
-      <option value="cpi">Cペプチドインデックス (CPI)</option>
+      <option value="cpi">Cペプチドインデックス (CPI) ＋ SUIT index</option>
       <option value="insulinogenic">インスリン分泌指数 (Insulinogenic Index)</option>
       <option value="ogtt75">75gOGTT判定（一般成人／妊娠糖尿病）</option>
       <option value="glucagon-cpr">グルカゴン負荷試験（Cペプチド・インスリン分泌予備能）</option>
@@ -227,9 +227,12 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
     </optgroup>
     <optgroup label="電解質・体液">
       <option value="osm">血清浸透圧</option>
+      <option value="urine-osm">尿浸透圧（計算値）</option>
       <option value="corrected-na">高血糖時の補正Na</option>
       <option value="hyponatremia">低Na血症の鑑別・次に行う検査</option>
       <option value="hypernatremia">高Na血症の鑑別・次に行う検査</option>
+      <option value="free-water-deficit">高Na血症の自由水欠乏量</option>
+      <option value="fluid-deficit">体液欠乏量の推定</option>
       <option value="hypercalcemia">高Ca血症の鑑別・次に行う検査</option>
       <option value="hypokalemia">低K血症の鑑別・次に行う検査</option>
       <option value="hyperkalemia">高K血症の鑑別・次に行う検査</option>
@@ -250,8 +253,11 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
       <option value="siadh">SIADH診断基準（2023年版）</option>
       <option value="ft3-ft4-ratio">FT3/FT4比（Graves病 vs 無痛性甲状腺炎の参考鑑別）</option>
       <option value="ddavp-cushing">DDAVP負荷（Cushing病鑑別）</option>
+      <option value="avs-pa">副腎静脈サンプリング（AVS）評価</option>
     </optgroup>
     <optgroup label="腎機能・尿検査">
+      <option value="egfr-jsn">eGFR（日本人Cr式）</option>
+      <option value="crcl-cg">推算クレアチニンクリアランス（Cockcroft–Gault）</option>
       <option value="feua">尿中尿酸排泄率 (FEUA)</option>
       <option value="feca">尿中Ca排泄率 (FECa)</option>
       <option value="trp">尿細管リン再吸収率 (TRP)</option>
@@ -261,16 +267,25 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
     </optgroup>
     <optgroup label="肝機能・鉄代謝">
       <option value="fib4">FIB-4 index</option>
+      <option value="nafld-fibrosis">NAFLD fibrosis score (NFS)</option>
       <option value="tsat">TSAT（トランスフェリン飽和度）</option>
+      <option value="nakao-iron">必要鉄量（中尾の式）</option>
     </optgroup>
-    <optgroup label="脂質管理">
+    <optgroup label="脂質・動脈硬化リスク">
+      <option value="hisayama-score">久山町スコア（10年ASCVDリスク）</option>
+      <option value="suita-score">吹田スコア（10年冠動脈疾患リスク）</option>
       <option value="lipid-phenotype">脂質表現型（Fredrickson/WHO）推定・Friedewald LDL・non-HDL-C</option>
       <option value="ldl-risk">LDLコレステロールのリスク分類・管理目標</option>
     </optgroup>
     <optgroup label="腎機能：病期分類・食事療法">
       <option value="kidney-stage">CKD重症度分類 ＋ 糖尿病性腎症病期分類2023 ＋ 食事療法</option>
     </optgroup>
+    <optgroup label="意識評価・救急">
+      <option value="jcs">Japan Coma Scale (JCS)</option>
+      <option value="gcs">Glasgow Coma Scale (GCS)</option>
+    </optgroup>
     <optgroup label="栄養・その他">
+      <option value="harris-benedict">Harris–Benedict式（BEE / TEE）</option>
       <option value="nutrition-plan">肥満・糖尿病・CKDの栄養管理（エネルギー・蛋白・食塩・K）</option>
       <option value="tanaka-salt">1日食塩摂取量（田中の式）</option>
       <option value="steroid-conversion">ステロイド力価換算</option>
@@ -390,12 +405,12 @@ const CALCS = [
     }
   },
   {
-    id:'cpi', title:'Cペプチドインデックス (CPI)',
-    desc:'空腹時血糖とCペプチドから内因性インスリン分泌能をみる参考指標です。0.8未満・1.2以上などのカットオフは治療方針の参考として報告されていますが、単独でインスリン治療や経口薬の適応を決定するものではありません。',
+    id:'cpi', title:'Cペプチドインデックス (CPI) ＋ SUIT index',
+    desc:'空腹時血糖と空腹時CペプチドからCPIとSUIT indexを同時に算出します。いずれも内因性インスリン分泌能の参考指標で、腎機能低下ではCペプチドが高くなり過大評価し得ます。',
     inputs:[
       {label:'空腹時血糖',unit:'mg/dL',ph:'150'},
       {label:'空腹時Cペプチド',unit:'ng/mL',ph:'1.5'},
-      {label:'eGFR（任意）',unit:'mL/分/1.73m²',ph:'60'},
+      {label:'eGFR（任意）',unit:'mL/分/1.73m²',ph:'60',optional:true},
     ],
     validate:(v)=>{
       const [glu,cp,egfr]=v;
@@ -406,19 +421,31 @@ const CALCS = [
     },
     compute:(v)=>{
       const [glu,cp,egfr]=v;
-      const val=(cp/glu)*100;
+      const cpi=(cp/glu)*100;
+      const suit=glu>61.7 ? 1500*cp/(glu-61.7) : NaN;
       let cls,main;
-      if(val<0.8){
-        cls='hi'; main=`CPI = ${val.toFixed(2)}（0.8未満）：内因性インスリン分泌低下を示唆し、インスリン必要性が高い群で多くみられる範囲です。`;
-      } else if(val<1.2){
-        cls='brd'; main=`CPI = ${val.toFixed(2)}（0.8〜1.2未満）：境界域の参考値です。`;
+      if(cpi<0.8){
+        cls='hi'; main=`CPI = ${cpi.toFixed(2)}（0.8未満）：内因性インスリン分泌低下を示唆し、インスリン必要性が高い群で多くみられる範囲です。`;
+      } else if(cpi<1.2){
+        cls='brd'; main=`CPI = ${cpi.toFixed(2)}（0.8〜1.2未満）：境界域の参考値です。`;
       } else {
-        cls='ok'; main=`CPI = ${val.toFixed(2)}（1.2以上）：内因性インスリン分泌が比較的保たれていることを示唆します。`;
+        cls='ok'; main=`CPI = ${cpi.toFixed(2)}（1.2以上）：内因性インスリン分泌が比較的保たれていることを示唆します。`;
       }
-      let renal='';
-      if(!isNaN(egfr)&&egfr<60) renal='<br><strong>⚠️ 腎機能低下あり：</strong>Cペプチドは腎で代謝されるため、CPIが実際の分泌能より高く見える可能性があります。';
-      else renal='<br><span style="font-size:.78rem">Cペプチドは腎機能の影響を受けます。腎機能低下例では過大評価に注意してください。</span>';
-      return {results:[{label:'CPI',value:val,decimals:2,unit:''}],interpretation:{cls,html:`<strong>参考判定</strong><br>${main}${renal}<br><span style="font-size:.78rem">CPIのカットオフは研究集団により異なり、血糖値・治療歴・腎機能と合わせて解釈してください。</span>`}};
+      let suitLine;
+      if(isNaN(suit)){
+        suitLine='SUIT indexは空腹時血糖が61.7 mg/dL以下では式の分母が0以下となるため算出できません。';
+      } else if(suit<23.5){
+        suitLine=`SUIT index = ${suit.toFixed(1)}。日本人2型糖尿病の入院患者を対象とした研究では23.5未満が、80%以上の特異度で将来のインスリン必要性を予測する参考カットオフとして報告されています。ただし普遍的な診断基準ではありません。`;
+      } else {
+        suitLine=`SUIT index = ${suit.toFixed(1)}。研究上の23.5未満というインスリン必要性予測の参考カットオフには該当しませんが、血糖・BMI・病期により最適カットオフは変動します。`;
+      }
+      const renal = !isNaN(egfr)&&egfr<60
+        ? `<br><strong>⚠️ 腎機能低下あり：</strong>eGFR ${egfr.toFixed(1)}。Cペプチドは腎で代謝されるため、CPI・SUITとも実際の分泌能より高く見える可能性があります。`
+        : '<br><span style="font-size:.78rem">Cペプチドは腎機能の影響を受けます。腎機能低下例では過大評価に注意してください。</span>';
+      const results=[{label:'CPI',value:cpi,decimals:2,unit:''}];
+      if(!isNaN(suit)) results.push({label:'SUIT index',value:suit,decimals:1,unit:'%'});
+      else results.push({label:'SUIT index',text:'算出不可'});
+      return {results,interpretation:{cls,html:`<strong>参考判定</strong><br>${main}<br>${suitLine}${renal}<br><span style="font-size:.78rem">SUIT = 1500×空腹時Cペプチド/(空腹時血糖−61.7)。CPI・SUITはいずれも単独で治療法を決定する指標ではありません。</span>`}};
     }
   },
   {
@@ -1677,6 +1704,390 @@ const CALCS = [
     }
   },
 
+  {
+    id:'egfr-jsn', title:'eGFR（日本人Cr式）',
+    desc:'日本腎臓学会の成人日本人用eGFRcr式で、血清クレアチニン・年齢・性別からeGFRを算出します。18歳以上、安定した腎機能での使用が前提です。',
+    inputs:[
+      {label:'性別',type:'select',options:[{value:'male',label:'男性'},{value:'female',label:'女性'}]},
+      {label:'年齢',unit:'歳',ph:'65'},
+      {label:'血清Cr（酵素法）',unit:'mg/dL',ph:'0.85'},
+    ],
+    validate:(v)=>{
+      const [,age,cr]=v;
+      if(isNaN(age)||isNaN(cr)) return '年齢と血清Crを入力してください。';
+      if(age<18) return '日本人成人eGFR式は18歳以上が対象です。';
+      if(cr<=0) return '血清Crは正の値を入力してください。';
+      return null;
+    },
+    compute:(v)=>{
+      const [sex,age,cr]=v;
+      let egfr=194*Math.pow(cr,-1.094)*Math.pow(age,-0.287);
+      if(sex==='female') egfr*=0.739;
+      const g=egfr>=90?'G1':egfr>=60?'G2':egfr>=45?'G3a':egfr>=30?'G3b':egfr>=15?'G4':'G5';
+      const cls=egfr>=60?'ok':egfr>=30?'brd':'hi';
+      return {results:[{label:'eGFR',value:egfr,decimals:1,unit:'mL/分/1.73m²'},{label:'G区分',text:g}],interpretation:{cls,html:`<strong>eGFR ${egfr.toFixed(1)}（${g}）</strong><br>日本人成人の血清Cr式による推算値です。AKIなど腎機能が急速に変化している状況、妊娠、極端な筋肉量では誤差が大きくなります。薬剤投与量では体表面積補正なし腎機能やCockcroft–Gault式が求められる場合があります。`}};
+    }
+  },
+  {
+    id:'crcl-cg', title:'推算クレアチニンクリアランス（Cockcroft–Gault）',
+    desc:'Cockcroft–Gault式で推算CrCl（mL/min）を算出します。薬剤投与設計で用いられることがありますが、肥満・やせ・高齢・筋肉量低下では使用する体重やCrの解釈に注意が必要です。',
+    inputs:[
+      {label:'性別',type:'select',options:[{value:'male',label:'男性'},{value:'female',label:'女性'}]},
+      {label:'年齢',unit:'歳',ph:'65'},
+      {label:'計算に用いる体重',unit:'kg',ph:'60'},
+      {label:'血清Cr',unit:'mg/dL',ph:'0.9'},
+    ],
+    validate:(v)=>{
+      const [,age,wt,cr]=v;
+      if([age,wt,cr].some(x=>isNaN(x))) return '年齢・体重・血清Crを入力してください。';
+      if(age<=0||age>=140||wt<=0||cr<=0) return '入力値を確認してください。';
+      return null;
+    },
+    compute:(v)=>{
+      const [sex,age,wt,cr]=v;
+      let ccr=((140-age)*wt)/(72*cr);
+      if(sex==='female') ccr*=0.85;
+      const cls=ccr>=60?'ok':ccr>=30?'brd':'hi';
+      return {results:[{label:'推算CrCl',value:ccr,decimals:1,unit:'mL/min'}],interpretation:{cls,html:`<strong>Cockcroft–Gault推算CrCl = ${ccr.toFixed(1)} mL/min</strong><br>体表面積補正なしの推算値です。肥満では実体重を用いると過大評価し得るため、薬剤ごとの添付文書や推奨に従い、標準体重・調整体重などの使用を検討してください。血清Crが定常状態でないAKIでは適しません。`}};
+    }
+  },
+  {
+    id:'urine-osm', title:'尿浸透圧（計算値）',
+    desc:'尿Na・尿K・尿中尿素窒素から尿浸透圧を概算します。糖尿病などで尿糖がある場合は尿糖を任意入力すると補正できます。実測尿浸透圧とは一致しないことがあります。',
+    inputs:[
+      {label:'尿Na',unit:'mEq/L',ph:'60'},
+      {label:'尿K',unit:'mEq/L',ph:'30'},
+      {label:'尿中尿素窒素（UUN）',unit:'mg/dL',ph:'500'},
+      {label:'尿糖（任意）',unit:'mg/dL',ph:'0',optional:true},
+    ],
+    validate:(v)=>{
+      const [na,k,uun,ug]=v;
+      if([na,k,uun].some(x=>isNaN(x))) return '尿Na・尿K・尿中尿素窒素を入力してください。';
+      if([na,k,uun].some(x=>x<0) || (!isNaN(ug)&&ug<0)) return '検査値は0以上で入力してください。';
+      return null;
+    },
+    compute:(v)=>{
+      const [na,k,uun,ug]=v;
+      const glucoseTerm=isNaN(ug)?0:ug/18;
+      const uosm=2*(na+k)+uun/2.8+glucoseTerm;
+      let line;
+      if(uosm<100) line='非常に希釈された尿です。低Na血症では原発性多飲や低溶質摂取などを考える手掛かりになります。';
+      else if(uosm<300) line='比較的希釈された尿です。高Na血症で多尿を伴う場合は尿崩症などを検討します。';
+      else if(uosm>=600) line='濃縮尿です。ADH作用や腎の濃縮能が保たれている状況を示唆しますが、臨床状況と合わせて判断します。';
+      else line='中間域です。血漿浸透圧、尿量、血清Na、糖尿の有無と合わせて解釈してください。';
+      return {results:[{label:'計算尿浸透圧',value:uosm,decimals:0,unit:'mOsm/L'}],interpretation:{cls:'brd',html:`<strong>${line}</strong><br>式：2×(尿Na＋尿K)＋UUN/2.8${isNaN(ug)?'':'＋尿糖/18'}。${isNaN(ug)?'尿糖は0として計算しています。糖尿がある場合は入力してください。':'尿糖項も含めています。'}<br><span style="font-size:.78rem">これは計算osmolarityの概算であり、実測osmolalityが必要な場面では検査室測定を優先してください。</span>`}};
+    }
+  },
+  {
+    id:'jcs', title:'Japan Coma Scale (JCS)',
+    desc:'Japan Coma Scaleを選択式で記録します。0、I桁、II桁、III桁の各レベルから最も近い状態を選択してください。',
+    inputs:[
+      {label:'意識状態',type:'select',options:[
+        {value:'0',label:'0：意識清明'},
+        {value:'1',label:'1：意識清明とはいえない'},
+        {value:'2',label:'2：見当識障害あり'},
+        {value:'3',label:'3：自分の名前・生年月日が言えない'},
+        {value:'10',label:'10：普通の呼びかけで容易に開眼'},
+        {value:'20',label:'20：大声または体を揺さぶると開眼'},
+        {value:'30',label:'30：痛み刺激＋呼びかけでかろうじて開眼'},
+        {value:'100',label:'100：痛み刺激を払いのける動作'},
+        {value:'200',label:'200：痛み刺激で少し手足を動かす／顔をしかめる'},
+        {value:'300',label:'300：痛み刺激に反応しない'},
+      ]},
+    ],
+    validate:()=>null,
+    compute:(v)=>{
+      const score=Number(v[0]);
+      const level=score===0?'意識清明':score<10?'I桁：刺激なしで覚醒している':score<100?'II桁：刺激すると覚醒する':'III桁：刺激しても覚醒しない';
+      const cls=score===0?'ok':score<10?'brd':'hi';
+      return {results:[{label:'JCS',text:String(score)},{label:'区分',text:level,wide:true}],interpretation:{cls,html:`<strong>JCS ${score}</strong><br>${level}。鎮静薬、挿管、失語、認知症、聴覚障害などが評価に影響するため、経時変化と神経所見を併記してください。`}};
+    }
+  },
+  {
+    id:'gcs', title:'Glasgow Coma Scale (GCS)',
+    desc:'成人GCSをE（開眼）・V（言語）・M（運動）から算出します。合計3〜15点です。挿管などでVが評価不能の場合は単純合計を用いず、E/V/Mを個別記載してください。',
+    inputs:[
+      {label:'E：開眼',type:'select',options:[{value:'4',label:'E4 自発的に開眼'},{value:'3',label:'E3 呼びかけで開眼'},{value:'2',label:'E2 痛み刺激で開眼'},{value:'1',label:'E1 開眼なし'}]},
+      {label:'V：言語反応',type:'select',options:[{value:'5',label:'V5 見当識あり'},{value:'4',label:'V4 混乱した会話'},{value:'3',label:'V3 不適切な言葉'},{value:'2',label:'V2 理解不能な発声'},{value:'1',label:'V1 発声なし'}]},
+      {label:'M：運動反応',type:'select',options:[{value:'6',label:'M6 命令に従う'},{value:'5',label:'M5 痛みの部位に手を持っていく'},{value:'4',label:'M4 痛みから逃避'},{value:'3',label:'M3 異常屈曲'},{value:'2',label:'M2 伸展'},{value:'1',label:'M1 反応なし'}]},
+    ],
+    validate:()=>null,
+    compute:(v)=>{
+      const e=Number(v[0]),vv=Number(v[1]),m=Number(v[2]),total=e+vv+m;
+      const cls=total>=13?'ok':total>=9?'brd':'hi';
+      const sev=total>=13?'軽度〜ほぼ正常域':total>=9?'中等度意識障害':'重度意識障害';
+      return {results:[{label:'GCS合計',text:`${total}/15`},{label:'内訳',text:`E${e} V${vv} M${m}`,wide:true}],interpretation:{cls,html:`<strong>GCS ${total}/15（E${e} V${vv} M${m}）</strong><br>${sev}の目安です。総点だけでなくE/V/Mの内訳と経時変化を記載してください。`}};
+    }
+  },
+  {
+    id:'harris-benedict', title:'Harris–Benedict式（BEE / TEE）',
+    desc:'Harris–Benedict式で基礎エネルギー消費量（BEE）を算出し、活動係数とストレス係数を掛けてTEEを推定します。間接熱量測定が可能ならそちらを優先します。',
+    inputs:[
+      {label:'性別',type:'select',options:[{value:'male',label:'男性'},{value:'female',label:'女性'}]},
+      {label:'年齢',unit:'歳',ph:'65'},
+      {label:'身長',unit:'cm',ph:'165'},
+      {label:'体重',unit:'kg',ph:'60'},
+      {label:'活動係数',type:'select',options:[{value:'1.0',label:'1.0 臥床中心'},{value:'1.2',label:'1.2 ベッド上〜車椅子'},{value:'1.3',label:'1.3 軽い離床・歩行'},{value:'1.4',label:'1.4 歩行あり'},{value:'1.5',label:'1.5 軽作業'},{value:'1.7',label:'1.7 中等度活動'},{value:'1.9',label:'1.9 高活動'}]},
+      {label:'ストレス係数',type:'select',options:[{value:'1.0',label:'1.0 侵襲なし'},{value:'1.1',label:'1.1 軽度侵襲'},{value:'1.2',label:'1.2 中等度侵襲'},{value:'1.3',label:'1.3 やや高度'},{value:'1.5',label:'1.5 高度侵襲'},{value:'2.0',label:'2.0 非常に高度（例：広範囲熱傷など）'}]},
+    ],
+    validate:(v)=>{
+      const [,age,h,w]=v;
+      if([age,h,w].some(x=>isNaN(x))) return '年齢・身長・体重を入力してください。';
+      if(age<=0||h<=0||w<=0) return '正の値を入力してください。';
+      return null;
+    },
+    compute:(v)=>{
+      const [sex,age,h,w,af,sf]=v;
+      const bee=sex==='male' ? 66.5+13.8*w+5.0*h-6.8*age : 655.1+9.6*w+1.8*h-4.7*age;
+      const tee=bee*Number(af)*Number(sf);
+      return {results:[{label:'BEE',value:bee,decimals:0,unit:'kcal/日'},{label:'TEE',value:tee,decimals:0,unit:'kcal/日'}],interpretation:{cls:'brd',html:`<strong>TEE ≈ ${tee.toFixed(0)} kcal/日</strong><br>TEE = BEE × 活動係数 ${af} × ストレス係数 ${sf}。Harris–Benedict式は推算式で、日本人高齢者や肥満・低体重、重症患者では誤差が大きくなり得ます。実際の体重変化、摂取量、間接熱量測定などで再評価してください。`}};
+    }
+  },
+  {
+    id:'hisayama-score', title:'久山町スコア（10年ASCVDリスク）',
+    desc:'動脈硬化性疾患予防ガイドライン2022年版で用いられる久山町スコアにより、40〜79歳の一次予防患者の10年間の冠動脈疾患＋アテローム血栓性脳梗塞リスクを低・中・高に分類します。',
+    inputs:[
+      {label:'年齢',unit:'歳',ph:'62'},
+      {label:'性別',type:'select',options:[{value:'female',label:'女性'},{value:'male',label:'男性'}]},
+      {label:'収縮期血圧',unit:'mmHg',ph:'132'},
+      {label:'糖代謝異常（糖尿病は除く）',type:'select',options:[{value:'no',label:'なし'},{value:'yes',label:'あり'}]},
+      {label:'LDL-C',unit:'mg/dL',ph:'145'},
+      {label:'HDL-C',unit:'mg/dL',ph:'52'},
+      {label:'現在喫煙',type:'select',options:[{value:'no',label:'なし'},{value:'yes',label:'あり'}]},
+      {label:'スコア適用外となる高リスク病態',type:'select',options:[{value:'none',label:'なし'},{value:'dm',label:'糖尿病あり'},{value:'ckd',label:'CKDあり'},{value:'pad',label:'PADあり'},{value:'ascvd',label:'冠動脈疾患/アテローム血栓性脳梗塞の既往あり'}]},
+    ],
+    validate:(v)=>{
+      const [age,,sbp,,ldl,hdl]=v;
+      if([age,sbp,ldl,hdl].some(x=>isNaN(x))) return '年齢・収縮期血圧・LDL-C・HDL-Cを入力してください。';
+      if(age<40||age>79) return '久山町スコアによるこのリスク分類は40〜79歳が対象です。';
+      if([sbp,ldl,hdl].some(x=>x<=0)) return '正の値を入力してください。';
+      return null;
+    },
+    compute:(v)=>{
+      const [age,sex,sbp,dysgly,ldl,hdl,smoke,override]=v;
+      let score=sex==='male'?7:0;
+      score += sbp<120?0:sbp<130?1:sbp<140?2:sbp<160?3:4;
+      if(dysgly==='yes') score+=1;
+      score += ldl<120?0:ldl<140?1:ldl<160?2:3;
+      score += hdl>=60?0:hdl>=40?1:2;
+      if(smoke==='yes') score+=2;
+      let risk,range,cls;
+      if(age<50){ risk=score<=12?'低リスク':'中リスク'; }
+      else if(age<60){ risk=score<=7?'低リスク':score<=18?'中リスク':'高リスク'; }
+      else if(age<70){ risk=score<=1?'低リスク':score<=12?'中リスク':'高リスク'; }
+      else { risk=score<=7?'中リスク':'高リスク'; }
+      range=risk==='低リスク'?'<2%':risk==='中リスク'?'2〜<10%':'≥10%';
+      cls=risk==='低リスク'?'ok':risk==='中リスク'?'brd':'hi';
+      let warning='';
+      if(override!=='none') warning='<br><strong>⚠️ 適用上の注意：</strong>糖尿病、CKD、PAD、二次予防などはスコアにかかわらず高リスクとして扱う病態があり、現行ガイドラインのリスク分類を優先してください。';
+      return {results:[{label:'久山町スコア',text:`${score}点`},{label:'10年ASCVDリスク',text:`${risk}（${range}）`,wide:true}],interpretation:{cls,html:`<strong>${risk}：10年発症リスク ${range}</strong><br>アウトカムは冠動脈疾患＋アテローム血栓性脳梗塞です。${warning}<br><span style="font-size:.78rem">このスコアは一次予防の脂質管理目標設定の補助であり、家族性高コレステロール血症など個別病態では別の管理が必要です。</span>`}};
+    }
+  },
+  {
+    id:'suita-score', title:'吹田スコア（10年冠動脈疾患リスク）',
+    desc:'吹田研究に基づくLDL版吹田スコアで、10年間の冠動脈疾患発症確率を参考推定します。JAS 2022では一次予防のリスク評価は久山町スコアへ更新されているため、吹田スコアは参考・旧来指標として表示します。',
+    inputs:[
+      {label:'年齢',unit:'歳',ph:'60'},
+      {label:'性別',type:'select',options:[{value:'male',label:'男性'},{value:'female',label:'女性'}]},
+      {label:'現在喫煙',type:'select',options:[{value:'no',label:'なし'},{value:'yes',label:'あり'}]},
+      {label:'糖尿病',type:'select',options:[{value:'no',label:'なし'},{value:'yes',label:'あり'}]},
+      {label:'収縮期血圧',unit:'mmHg',ph:'135'},
+      {label:'拡張期血圧',unit:'mmHg',ph:'82'},
+      {label:'LDL-C',unit:'mg/dL',ph:'140'},
+      {label:'HDL-C',unit:'mg/dL',ph:'50'},
+      {label:'eGFR',unit:'mL/分/1.73m²',ph:'72'},
+    ],
+    validate:(v)=>{
+      const [age,,,,sbp,dbp,ldl,hdl,egfr]=v;
+      if([age,sbp,dbp,ldl,hdl,egfr].some(x=>isNaN(x))) return '年齢・血圧・LDL-C・HDL-C・eGFRを入力してください。';
+      if(age<35) return 'LDL版吹田スコアは35歳以上で使用してください。';
+      if([sbp,dbp,ldl,hdl,egfr].some(x=>x<=0)) return '正の値を入力してください。';
+      return null;
+    },
+    compute:(v)=>{
+      const [age,sex,smoke,dm,sbp,dbp,ldl,hdl,egfr]=v;
+      let score=age<45?30:age<55?38:age<65?45:age<70?51:53;
+      if(sex==='female') score-=7;
+      if(smoke==='yes') score+=5;
+      if(dm==='yes') score+=6;
+      let bp=0;
+      if(sbp<120 && dbp<80) bp=-7;
+      else if(sbp>=160 || dbp>=100) bp=6;
+      else if(sbp>=140 || dbp>=90) bp=4;
+      else bp=0;
+      score+=bp;
+      score += ldl<100?0:ldl<140?5:ldl<160?7:ldl<180?10:11;
+      score += hdl<40?0:hdl<60?-5:-6;
+      score += egfr>=60?0:egfr>=30?3:14;
+      let risk;
+      if(score<=35) risk='<1%'; else if(score<=40) risk='1%'; else if(score<=45) risk='2%'; else if(score<=50) risk='3%'; else if(score<=55) risk='5%'; else if(score<=60) risk='9%'; else if(score<=65) risk='14%'; else if(score<=70) risk='22%'; else risk='>28%';
+      const cls=score<=50?'ok':score<=60?'brd':'hi';
+      return {results:[{label:'吹田スコア',text:`${score}点`},{label:'10年冠動脈疾患リスク',text:risk,wide:true}],interpretation:{cls,html:`<strong>推定10年冠動脈疾患リスク：${risk}</strong><br>LDL版吹田スコアによる参考値です。現在の日本動脈硬化学会2022年版では久山町スコアが一次予防の主要な絶対リスク評価に採用されているため、現行の脂質管理目標設定では久山町スコアを優先してください。`}};
+    }
+  },
+  {
+    id:'free-water-deficit', title:'高Na血症の自由水欠乏量',
+    desc:'高Na血症で、体内総水分量（TBW）と現在Na・目標Naから自由水欠乏量を推算します。循環不全がある場合はまず等張液による循環維持を優先し、補正速度を別途管理してください。',
+    inputs:[
+      {label:'性別',type:'select',options:[{value:'male',label:'男性'},{value:'female',label:'女性'}]},
+      {label:'年齢',unit:'歳',ph:'70'},
+      {label:'体重',unit:'kg',ph:'60'},
+      {label:'現在の血清Na',unit:'mEq/L',ph:'158'},
+      {label:'目標Na',unit:'mEq/L',ph:'140'},
+    ],
+    validate:(v)=>{
+      const [,age,w,na,target]=v;
+      if([age,w,na,target].some(x=>isNaN(x))) return '年齢・体重・現在Na・目標Naを入力してください。';
+      if([age,w,na,target].some(x=>x<=0)) return '正の値を入力してください。';
+      if(na<=target) return '自由水欠乏量は現在Naが目標Naより高い場合に使用してください。';
+      return null;
+    },
+    compute:(v)=>{
+      const [sex,age,w,na,target]=v;
+      const coef=sex==='male'?(age>=65?0.5:0.6):(age>=65?0.45:0.5);
+      const tbw=w*coef;
+      const deficit=tbw*(na/target-1);
+      return {results:[{label:'推定TBW',value:tbw,decimals:1,unit:'L'},{label:'自由水欠乏量',value:deficit,decimals:2,unit:'L'}],interpretation:{cls:'hi',html:`<strong>自由水欠乏量 ≈ ${deficit.toFixed(2)} L</strong><br>TBW係数は${coef.toFixed(2)}（性別・65歳以上を考慮）として計算しました。式：TBW×(現在Na/目標Na−1)。これは現在までの欠乏量の概算で、進行中の尿・便・不感蒸泄は含みません。高Na血症の補正速度は発症速度・神経症状・原因を踏まえて個別に設定してください。肥満ではTBW係数が低くなることがあり、過大評価に注意が必要です。`}};
+    }
+  },
+  {
+    id:'fluid-deficit', title:'体液欠乏量の推定',
+    desc:'脱水・細胞外液量減少の体液欠乏量を、普段の体重との差または臨床的な脱水率から概算します。自由水欠乏量とは別の概念です。',
+    inputs:[
+      {label:'現在体重',unit:'kg',ph:'58'},
+      {label:'普段の安定体重（任意）',unit:'kg',ph:'62',optional:true},
+      {label:'臨床的な脱水の程度',type:'select',options:[{value:'none',label:'選択しない'},{value:'0.03',label:'軽度：約3%'},{value:'0.06',label:'中等度：約6%'},{value:'0.09',label:'高度：約9%'}]},
+    ],
+    validate:(v)=>{
+      const [current,usual]=v;
+      if(isNaN(current)||current<=0) return '現在体重を入力してください。';
+      if(!isNaN(usual)&&usual<=0) return '普段の体重は正の値を入力してください。';
+      return null;
+    },
+    compute:(v)=>{
+      const [current,usual,sev]=v;
+      const byWeight=!isNaN(usual)&&usual>current?usual-current:NaN;
+      const p=sev==='none'?NaN:Number(sev);
+      const bySeverity=isNaN(p)?NaN:current*p;
+      const results=[];
+      if(!isNaN(byWeight)) results.push({label:'体重差からの欠乏量',value:byWeight,decimals:2,unit:'L（概算）'});
+      if(!isNaN(bySeverity)) results.push({label:'脱水率からの欠乏量',value:bySeverity,decimals:2,unit:'L（概算）'});
+      if(!results.length) results.push({label:'欠乏量',text:'普段の体重または脱水程度を入力してください。',wide:true});
+      let text='';
+      if(!isNaN(byWeight)) text+=`普段の体重との差は約${byWeight.toFixed(2)} kgで、短期間の体液喪失ならおおむね同量Lの体液欠乏を示唆します。`;
+      if(!isNaN(bySeverity)) text+=`${text?' ':''}選択した脱水率からは約${bySeverity.toFixed(2)} Lと概算されます。`;
+      return {results,interpretation:{cls:'brd',html:`<strong>体液欠乏量の概算</strong><br>${text||'現時点では数値推定できません。'}<br>身体所見、血圧・脈拍、尿量、体重変化、BUN/Cr、超音波などを組み合わせて評価してください。心不全・腎不全・敗血症などでは単純な欠乏量＝補液量とはなりません。`}};
+    }
+  },
+  {
+    id:'avs-pa', title:'副腎静脈サンプリング（AVS）評価',
+    desc:'原発性アルドステロン症のAVSについて、左右の選択性指数（SI）、A/C比、側性化指数（LI）、対側抑制比（CR）を自動計算します。ACTH負荷の有無でSI基準を切り替えます。',
+    inputs:[
+      {label:'ACTH刺激',type:'select',options:[{value:'yes',label:'あり'},{value:'no',label:'なし'}]},
+      {label:'右副腎静脈 PAC',unit:'pg/mL',ph:'12000'},
+      {label:'右副腎静脈 Cortisol',unit:'μg/dL',ph:'600'},
+      {label:'左副腎静脈 PAC',unit:'pg/mL',ph:'2000'},
+      {label:'左副腎静脈 Cortisol',unit:'μg/dL',ph:'500'},
+      {label:'IVC/末梢 PAC',unit:'pg/mL',ph:'100'},
+      {label:'IVC/末梢 Cortisol',unit:'μg/dL',ph:'15'},
+    ],
+    validate:(v)=>{
+      const vals=v.slice(1);
+      if(vals.some(x=>isNaN(x))) return '左右副腎静脈およびIVC/末梢のPAC・Cortisolを入力してください。';
+      if(vals.some(x=>x<=0)) return 'PAC・Cortisolは正の値を入力してください。';
+      return null;
+    },
+    compute:(v)=>{
+      const [acth,rA,rC,lA,lC,iA,iC]=v;
+      const siR=rC/iC, siL=lC/iC, cutoff=acth==='yes'?5:2;
+      const acR=rA/rC, acL=lA/lC, acI=iA/iC;
+      const dominant=acR>=acL?'右':'左';
+      const high=Math.max(acR,acL),low=Math.min(acR,acL);
+      const li=high/low, cr=low/acI;
+      const successR=siR>=cutoff, successL=siL>=cutoff;
+      let cls='brd',decision='判定保留';
+      if(successR&&successL){
+        if(acth==='yes'){
+          if(li>4){decision=`片側性を支持（${dominant}優位）`;cls='hi';}
+          else if(li>=2){decision='境界域（LI 2〜4）';cls='brd';}
+          else {decision='明らかな片側性を示さない';cls='ok';}
+        } else {
+          if(li>4){decision=`明らかな左右差（${dominant}優位）`;cls='hi';}
+          else if(li>=2){decision=`左右差あり（${dominant}優位、総合判定）`;cls='brd';}
+          else {decision='明らかな片側性を示さない';cls='ok';}
+        }
+      } else decision='片側または両側の選択的採血不成功';
+      let extra='';
+      if(successR&&successL){
+        extra=`<br>CR = ${cr.toFixed(2)}${cr<1?'（対側抑制あり：片側性を補強）':'（CR<1の対側抑制は認めず）'}。`;
+      } else if(successR!==successL){
+        const side=successR?'右':'左';
+        const ac=successR?acR:acL;
+        const ratio=ac/acI;
+        extra=`<br>片側のみ成功：${side}副腎A/C ÷ IVC A/C = ${ratio.toFixed(2)}。5.5以上なら成功側優位、0.5以下なら反対側優位を示唆する参考所見があります。`;
+      }
+      const results=[
+        {label:'右SI',value:siR,decimals:2,unit:''},{label:'左SI',value:siL,decimals:2,unit:''},
+        {label:'右A/C',value:acR,decimals:2,unit:''},{label:'左A/C',value:acL,decimals:2,unit:''},
+        {label:'LI',value:li,decimals:2,unit:''},{label:'CR',value:cr,decimals:2,unit:''},
+        {label:'総合判定',text:decision,wide:true}
+      ];
+      return {sections:[{title:'カテーテル選択性',results:results.slice(0,2)},{title:'側性評価',results:results.slice(2)}],interpretation:{cls,html:`<strong>${decision}</strong><br>SI基準：${acth==='yes'?'ACTH刺激後 ≥5':'ACTHなし ≥2'}。両側成功時のLI=${li.toFixed(2)}、優位側は${dominant}です。${acth==='yes'?'JES 2021ではACTH刺激後LI>4を片側性診断の基準とします。':'ACTHなしのLIは施設基準・総合所見を重視し、ACTH刺激後基準をそのまま適用しないでください。'}${extra}<br><span style="font-size:.78rem">自律性コルチゾール分泌があるとA/C比・LIが歪むため、PAC実測値・CT所見・低K・年齢なども含め総合判定してください。</span>`}};
+    }
+  },
+  {
+    id:'nafld-fibrosis', title:'NAFLD fibrosis score (NFS)',
+    desc:'年齢・BMI・糖代謝異常・AST/ALT比・血小板・AlbからNAFLD fibrosis scoreを算出し、advanced fibrosisの低・中間・高リスクを参考分類します。',
+    inputs:[
+      {label:'年齢',unit:'歳',ph:'58'},
+      {label:'BMI',unit:'kg/m²',ph:'29'},
+      {label:'IFGまたは糖尿病',type:'select',options:[{value:'no',label:'なし'},{value:'yes',label:'あり'}]},
+      {label:'AST',unit:'U/L',ph:'40'},
+      {label:'ALT',unit:'U/L',ph:'55'},
+      {label:'血小板',unit:'×10⁴/μL',ph:'18'},
+      {label:'Alb',unit:'g/dL',ph:'4.0'},
+    ],
+    validate:(v)=>{
+      const [age,bmi,,ast,alt,plt,alb]=v;
+      if([age,bmi,ast,alt,plt,alb].some(x=>isNaN(x))) return 'すべての項目を入力してください。';
+      if([age,bmi,ast,alt,plt,alb].some(x=>x<=0)) return '正の値を入力してください。';
+      return null;
+    },
+    compute:(v)=>{
+      const [age,bmi,ifg,ast,alt,plt,alb]=v;
+      const plt109=plt*10;
+      const nfs=-1.675+0.037*age+0.094*bmi+1.13*(ifg==='yes'?1:0)+0.99*(ast/alt)-0.013*plt109-0.66*alb;
+      let risk,cls;
+      if(nfs<-1.455){risk='advanced fibrosis低リスク';cls='ok';}
+      else if(nfs>=0.675){risk='advanced fibrosis高リスク';cls='hi';}
+      else {risk='中間域';cls='brd';}
+      let warn='';
+      if(age<35) warn+='<br><strong>⚠️ 35歳未満：</strong>NFSの精度は低下します。';
+      warn+='<br><span style="font-size:.78rem">肥満・2型糖尿病ではNFSの偽陽性/精度低下が問題となるため、現在はFIB-4を第一段階に用い、必要に応じVCTE/MRE/ELF等へ進む運用が一般的です。</span>';
+      return {results:[{label:'NFS',value:nfs,decimals:3,unit:''},{label:'判定',text:risk,wide:true}],interpretation:{cls,html:`<strong>${risk}</strong><br>NFS < -1.455：低リスク、-1.455〜0.674：中間域、≥0.675：高リスクの参考分類です。${warn}`}};
+    }
+  },
+  {
+    id:'nakao-iron', title:'必要鉄量（中尾の式）',
+    desc:'鉄欠乏性貧血に対する総必要鉄量を中尾の式で概算します。静注鉄の実際の投与量・1回量・総量は製剤ごとの添付文書を優先してください。',
+    inputs:[
+      {label:'治療前Hb',unit:'g/dL',ph:'9.0'},
+      {label:'体重',unit:'kg',ph:'60'},
+    ],
+    validate:(v)=>{
+      const [hb,w]=v;
+      if(isNaN(hb)||isNaN(w)) return 'Hbと体重を入力してください。';
+      if(hb<=0||w<=0) return '正の値を入力してください。';
+      return null;
+    },
+    compute:(v)=>{
+      const [hb,w]=v;
+      const iron=(2.72*(16-hb)+17)*w;
+      const cls=hb<10?'hi':hb<12?'brd':'ok';
+      let note=hb>=16?'<br><strong>⚠️ Hb 16 g/dL以上では中尾式による鉄欠乏補充量の算定は通常適用しません。</strong>':'';
+      return {results:[{label:'総必要鉄量（概算）',value:Math.max(0,iron),decimals:0,unit:'mg'}],interpretation:{cls,html:`<strong>中尾式による総必要鉄量 ≈ ${Math.max(0,iron).toFixed(0)} mg</strong><br>式：[2.72×(16−Hb)+17]×体重。貯蔵鉄を含めた古典的な総量推算です。${note}<br>フェリチン・TSAT、出血源、炎症、腎機能を確認し、静注鉄では必ず製剤ごとの最大1回量・投与間隔・総投与量に従ってください。`}};
+    }
+  },
   {
     id:'lipid-phenotype', title:'脂質表現型（Fredrickson/WHO）推定・Friedewald LDL・non-HDL-C',
     desc:'TC・TG・HDL-C・LDL-Cから脂質パターンを整理し、Fredrickson/WHO表現型を参考推定します。同時にFriedewald式LDL-C、non-HDL-C、計算レムナントコレステロールを表示します。I・III・V型は通常の脂質4項目だけでは確定できないため、必要な追加検査も案内します。',
