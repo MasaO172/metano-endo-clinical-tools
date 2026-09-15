@@ -1,4 +1,4 @@
-var CACHE_NAME = 'metano-endo-clinical-tools-v9-20260915-anemia';
+var CACHE_NAME = 'metano-endo-clinical-tools-v10-20260915-category-ui';
 var CORE_ASSETS = [
   './',
   './index.html',

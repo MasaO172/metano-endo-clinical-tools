@@ -76,10 +76,26 @@ h1{font-size:2rem;font-weight:700;color:var(--primary-dk);letter-spacing:-.02em;
   color:var(--primary);margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem;}
 .card-hd::after{content:'';flex:1;height:1px;background:var(--border);}
 
-select#calc-select{width:100%;padding:.7rem .8rem;font-size:.92rem;font-weight:600;
+.selector-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:.85rem;}
+.selector-field{display:flex;flex-direction:column;gap:.35rem;}
+.selector-field label{font-size:.76rem;font-weight:700;color:var(--primary-dk);}
+#category-select,#calc-select{width:100%;padding:.72rem .8rem;font-size:.9rem;font-weight:600;
   border:1.5px solid var(--border);border-radius:9px;color:var(--primary-dk);
   background:#fff;outline:none;cursor:pointer;font-family:inherit;}
-select#calc-select:focus{border-color:var(--accent);}
+#category-select:focus,#calc-select:focus{border-color:var(--accent);}
+.category-items-wrap{margin:.15rem 0 1rem;padding:.7rem .75rem;background:#f8fafc;border:1px solid var(--border);border-radius:9px;}
+.category-items-label{font-size:.72rem;font-weight:700;color:var(--sub);margin-bottom:.5rem;}
+.category-items{display:flex;flex-wrap:wrap;gap:.42rem;}
+.category-item-btn{border:1px solid #c7d6e5;background:#fff;color:var(--primary-dk);border-radius:999px;padding:.42rem .68rem;
+  font-family:inherit;font-size:.75rem;line-height:1.25;cursor:pointer;transition:all .12s;text-align:left;}
+.category-item-btn:hover{border-color:var(--accent);background:var(--primary-lt);}
+.category-item-btn.on{border-color:var(--primary);background:var(--primary);color:#fff;font-weight:700;}
+@media(max-width:600px){
+  .selector-grid{grid-template-columns:1fr;gap:.65rem;}
+  #category-select,#calc-select{font-size:.92rem;padding:.74rem .8rem;}
+  .category-items{display:grid;grid-template-columns:1fr;gap:.38rem;}
+  .category-item-btn{width:100%;border-radius:8px;padding:.52rem .65rem;font-size:.78rem;}
+}
 
 .calc-desc{margin:.9rem 0 1.2rem;font-size:.83rem;color:var(--sub);line-height:1.7;
   background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:.7rem .9rem;}
@@ -191,7 +207,7 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
 <header>
   <div class="badge">🩺 臨床計算ツール集</div>
   <h1>代謝・内分泌 臨床計算・診療支援ツール</h1>
-  <p class="subtitle">HOMA2（Oxford DTU検証データに基づく近似）を含む全57項目に対応</p>
+  <p class="subtitle">HOMA2（Oxford DTU検証データに基づく近似）を含む全56項目に対応</p>
 </header>
 
 <div class="copyright-box">
@@ -207,93 +223,20 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
 
 <div class="card">
   <div class="card-hd">計算項目を選択</div>
-  <select id="calc-select" onchange="renderForm(this.value)">
-    <optgroup label="糖代謝・インスリン分泌">
-      <option value="homa-beta">HOMA-β / HOMA-IR（簡易法）</option>
-      <option value="homa2">HOMA2（Oxford DTU検証データに基づく近似）</option>
-      <option value="cpi">Cペプチドインデックス (CPI) ＋ SUIT index</option>
-      <option value="insulinogenic">インスリン分泌指数 (Insulinogenic Index)</option>
-      <option value="ogtt75">75gOGTT判定（一般成人／妊娠糖尿病）</option>
-      <option value="glucagon-cpr">グルカゴン負荷試験（Cペプチド・インスリン分泌予備能）</option>
-      <option value="hypoglycemia-diff">低血糖症の鑑別・critical sample・次に行う検査</option>
-    </optgroup>
-    <optgroup label="血糖コントロール指標">
-      <option value="eag">推定平均血糖値 (eAG)</option>
-      <option value="avg-glu-simple">だいたいの平均血糖値（簡易法）</option>
-      <option value="ga-hba1c">GAのHbA1c換算</option>
-    </optgroup>
-    <optgroup label="インスリン治療・ポンプ">
-      <option value="pump-settings">インスリンポンプ初期設定（TDD・基礎・ICR・ISF）</option>
-    </optgroup>
-    <optgroup label="電解質・体液">
-      <option value="osm">血清浸透圧</option>
-      <option value="urine-osm">尿浸透圧（計算値）</option>
-      <option value="corrected-na">高血糖時の補正Na</option>
-      <option value="hyponatremia">低Na血症の鑑別・次に行う検査</option>
-      <option value="hypernatremia">高Na血症の鑑別・次に行う検査</option>
-      <option value="free-water-deficit">高Na血症の自由水欠乏量</option>
-      <option value="fluid-deficit">体液欠乏量の推定</option>
-      <option value="hypercalcemia">高Ca血症の鑑別・次に行う検査</option>
-      <option value="hypokalemia">低K血症の鑑別・次に行う検査</option>
-      <option value="hyperkalemia">高K血症の鑑別・次に行う検査</option>
-    </optgroup>
-    <optgroup label="酸塩基・血液ガス">
-      <option value="blood-gas">血液ガス・酸塩基平衡判定（AG・混合性障害・鑑別）</option>
-    </optgroup>
-    <optgroup label="内分泌・ホルモン負荷試験・診断">
-      <option value="pituitary-combined">下垂体前葉負荷（CRH・TRH・LHRH）</option>
-      <option value="ghrp2">GHRP-2負荷試験（成人GH分泌不全）</option>
-      <option value="rapid-acth">迅速ACTH負荷試験（250 μg）</option>
-      <option value="dst05">0.5 mgデキサメタゾン抑制試験</option>
-      <option value="dst1">1 mgデキサメタゾン抑制試験</option>
-      <option value="dst8">8 mgデキサメタゾン抑制試験</option>
-      <option value="captopril">カプトプリル負荷試験（原発性アルドステロン症）</option>
-      <option value="hypertonic-saline">5%高張食塩水負荷（AVP・中枢性尿崩症）</option>
-      <option value="vasopressin-di">水制限後バソプレシン負荷（尿崩症鑑別）</option>
-      <option value="siadh">SIADH診断基準（2023年版）</option>
-      <option value="ft3-ft4-ratio">FT3/FT4比（Graves病 vs 無痛性甲状腺炎の参考鑑別）</option>
-      <option value="ddavp-cushing">DDAVP負荷（Cushing病鑑別）</option>
-      <option value="avs-pa">副腎静脈サンプリング（AVS）評価</option>
-    </optgroup>
-    <optgroup label="腎機能・尿検査">
-      <option value="egfr-jsn">eGFR（日本人Cr式）</option>
-      <option value="crcl-cg">推算クレアチニンクリアランス（Cockcroft–Gault）</option>
-      <option value="feua">尿中尿酸排泄率 (FEUA)</option>
-      <option value="feca">尿中Ca排泄率 (FECa)</option>
-      <option value="trp">尿細管リン再吸収率 (TRP)</option>
-    </optgroup>
-    <optgroup label="体組成">
-      <option value="absi">ABSI (A Body Shape Index)</option>
-    </optgroup>
-    <optgroup label="肝機能・鉄代謝">
-      <option value="fib4">FIB-4 index</option>
-      <option value="nafld-fibrosis">NAFLD fibrosis score (NFS)</option>
-      <option value="tsat">TSAT（トランスフェリン飽和度）</option>
-      <option value="nakao-iron">必要鉄量（中尾の式）</option>
-    </optgroup>
-    <optgroup label="血液・貧血">
-      <option value="anemia-diff">貧血の鑑別・次に行う検査</option>
-    </optgroup>
-    <optgroup label="脂質・動脈硬化リスク">
-      <option value="hisayama-score">久山町スコア（10年ASCVDリスク）</option>
-      <option value="suita-score">吹田スコア（10年冠動脈疾患リスク）</option>
-      <option value="lipid-phenotype">脂質表現型（Fredrickson/WHO）推定・Friedewald LDL・non-HDL-C</option>
-      <option value="ldl-risk">LDLコレステロールのリスク分類・管理目標</option>
-    </optgroup>
-    <optgroup label="腎機能：病期分類・食事療法">
-      <option value="kidney-stage">CKD重症度分類 ＋ 糖尿病性腎症病期分類2023 ＋ 食事療法</option>
-    </optgroup>
-    <optgroup label="意識評価・救急">
-      <option value="jcs">Japan Coma Scale (JCS)</option>
-      <option value="gcs">Glasgow Coma Scale (GCS)</option>
-    </optgroup>
-    <optgroup label="栄養・その他">
-      <option value="harris-benedict">Harris–Benedict式（BEE / TEE）</option>
-      <option value="nutrition-plan">肥満・糖尿病・CKDの栄養管理（エネルギー・蛋白・食塩・K）</option>
-      <option value="tanaka-salt">1日食塩摂取量（田中の式）</option>
-      <option value="steroid-conversion">ステロイド力価換算</option>
-    </optgroup>
-  </select>
+  <div class="selector-grid">
+    <div class="selector-field">
+      <label for="category-select">1. 分類を選択</label>
+      <select id="category-select" onchange="selectCategory(this.value)"></select>
+    </div>
+    <div class="selector-field">
+      <label for="calc-select">2. 項目を選択</label>
+      <select id="calc-select" onchange="selectCalc(this.value)"></select>
+    </div>
+  </div>
+  <div class="category-items-wrap">
+    <div class="category-items-label">選択中の分類に含まれる項目</div>
+    <div id="category-items" class="category-items"></div>
+  </div>
 
   <p class="calc-desc" id="calc-desc"></p>
 
@@ -861,16 +804,6 @@ const CALCS = [
     compute:(v)=>{
       const val=28.7*v[0]-46.7;
       return {results:[{label:'eAG',value:val,decimals:1,unit:'mg/dL'}],interpretation:{cls:'ok',html:`<strong>参考</strong><br>eAG = ${val.toFixed(1)} mg/dL。HbA1cと実際の平均血糖は、貧血・赤血球寿命の変化・腎不全・急速な血糖変化などで乖離することがあります。CGM/SMBGと一致しない場合はHbA1cの解釈を見直してください。`}};
-    }
-  },
-  {
-    id:'avg-glu-simple', title:'だいたいの平均血糖値（簡便則・非標準）',
-    desc:'HbA1cから「(HbA1c−2)×30」で平均血糖を概算する簡便則です。標準化・検証された推定式ではないため、エビデンスに基づく換算にはeAG（ADAG式）を使用してください。',
-    inputs:[{label:'HbA1c (NGSP)',unit:'%',ph:'7.0'}],
-    validate:(v)=> baseValidate(v),
-    compute:(v)=>{
-      const val=(v[0]-2)*30;
-      return {results:[{label:'簡便推定平均血糖',value:val,decimals:1,unit:'mg/dL'}],interpretation:{cls:'brd',html:'<strong>⚠️ 簡便則</strong><br>この値は覚えやすい概算用で、標準的なeAG換算式ではありません。診療上の定量評価には「推定平均血糖値（eAG）」を優先してください。'}};
     }
   },
   {
@@ -4165,6 +4098,138 @@ function classifyArrInterval(iv,pos,border){
   return {level:3,label:'判定保留（陰性域〜陽性）'};
 }
 
+const CATEGORY_CONFIG = [
+  {id:'diabetes', label:'糖尿病・インスリン分泌', items:[
+    ['homa-beta','HOMA-β / HOMA-IR（簡易法）'],
+    ['homa2','HOMA2（Oxford DTU検証データに基づく近似）'],
+    ['cpi','Cペプチドインデックス (CPI) ＋ SUIT index'],
+    ['ogtt75','75gOGTT判定（一般成人／妊娠糖尿病）'],
+    ['glucagon-cpr','グルカゴン負荷試験（Cペプチド・インスリン分泌予備能）'],
+    ['hypoglycemia-diff','低血糖症の鑑別・critical sample・次に行う検査'],
+    ['insulinogenic','インスリン分泌指数 (Insulinogenic Index)']
+  ]},
+  {id:'glycemic', label:'血糖コントロール指標', items:[
+    ['eag','推定平均血糖値 (eAG)'],
+    ['ga-hba1c','GAのHbA1c換算']
+  ]},
+  {id:'insulin', label:'インスリン治療・ポンプ', items:[
+    ['pump-settings','インスリンポンプ初期設定（TDD・基礎・ICR・ISF）']
+  ]},
+  {id:'endocrine', label:'内分泌・ホルモン負荷試験・診断', items:[
+    ['siadh','SIADH診断基準（2023年版）'],
+    ['pituitary-combined','下垂体前葉負荷（CRH・TRH・LHRH）'],
+    ['ghrp2','GHRP-2負荷試験（成人GH分泌不全）'],
+    ['rapid-acth','迅速ACTH負荷試験（250 μg）'],
+    ['dst05','0.5 mgデキサメタゾン抑制試験'],
+    ['dst1','1 mgデキサメタゾン抑制試験'],
+    ['dst8','8 mgデキサメタゾン抑制試験'],
+    ['captopril','カプトプリル負荷試験（原発性アルドステロン症）'],
+    ['hypertonic-saline','5%高張食塩水負荷（AVP・中枢性尿崩症）'],
+    ['vasopressin-di','水制限後バソプレシン負荷（尿崩症鑑別）'],
+    ['ft3-ft4-ratio','FT3/FT4比（Graves病 vs 無痛性甲状腺炎の参考鑑別）'],
+    ['avs-pa','副腎静脈サンプリング（AVS）評価'],
+    ['ddavp-cushing','DDAVP負荷（Cushing病鑑別）']
+  ]},
+  {id:'lipid', label:'脂質・動脈硬化リスク', items:[
+    ['ldl-risk','LDLコレステロールのリスク分類・管理目標'],
+    ['lipid-phenotype','脂質表現型（Fredrickson/WHO）推定・Friedewald LDL・non-HDL-C'],
+    ['hisayama-score','久山町スコア（10年ASCVDリスク）'],
+    ['suita-score','吹田スコア（10年冠動脈疾患リスク）']
+  ]},
+  {id:'electrolyte', label:'電解質・体液', items:[
+    ['osm','血清浸透圧'],
+    ['urine-osm','尿浸透圧（計算値）'],
+    ['corrected-na','高血糖時の補正Na'],
+    ['hyponatremia','低Na血症の鑑別・次に行う検査'],
+    ['hypernatremia','高Na血症の鑑別・次に行う検査'],
+    ['free-water-deficit','高Na血症の自由水欠乏量'],
+    ['fluid-deficit','体液欠乏量の推定'],
+    ['hypercalcemia','高Ca血症の鑑別・次に行う検査'],
+    ['hypokalemia','低K血症の鑑別・次に行う検査'],
+    ['hyperkalemia','高K血症の鑑別・次に行う検査']
+  ]},
+  {id:'renal', label:'腎機能・尿検査・病期分類・食事療法', items:[
+    ['egfr-jsn','eGFR（日本人Cr式）'],
+    ['crcl-cg','推算クレアチニンクリアランス（Cockcroft–Gault）'],
+    ['feua','尿中尿酸排泄率 (FEUA)'],
+    ['feca','尿中Ca排泄率 (FECa)'],
+    ['trp','尿細管リン再吸収率 (TRP)'],
+    ['kidney-stage','CKD重症度分類 ＋ 糖尿病性腎症病期分類2023 ＋ 食事療法']
+  ]},
+  {id:'nutrition', label:'栄養・その他', items:[
+    ['nutrition-plan','肥満・糖尿病・CKDの栄養管理（エネルギー・蛋白・食塩・K）'],
+    ['harris-benedict','Harris–Benedict式（BEE / TEE）'],
+    ['tanaka-salt','1日食塩摂取量（田中の式）'],
+    ['steroid-conversion','ステロイド力価換算']
+  ]},
+  {id:'acidbase', label:'酸塩基・血液ガス', items:[
+    ['blood-gas','血液ガス・酸塩基平衡判定（AG・混合性障害・鑑別）']
+  ]},
+  {id:'body', label:'体組成', items:[
+    ['absi','ABSI (A Body Shape Index)']
+  ]},
+  {id:'liveriron', label:'肝機能・鉄代謝', items:[
+    ['fib4','FIB-4 index'],
+    ['nafld-fibrosis','NAFLD fibrosis score (NFS)'],
+    ['tsat','TSAT（トランスフェリン飽和度）'],
+    ['nakao-iron','必要鉄量（中尾の式）']
+  ]},
+  {id:'hematology', label:'血液・貧血', items:[
+    ['anemia-diff','貧血の鑑別・次に行う検査']
+  ]},
+  {id:'emergency', label:'意識評価・救急', items:[
+    ['jcs','Japan Coma Scale (JCS)'],
+    ['gcs','Glasgow Coma Scale (GCS)']
+  ]}
+];
+
+function getCategoryByCalc(id){
+  return CATEGORY_CONFIG.find(cat=>cat.items.some(item=>item[0]===id));
+}
+function renderCategoryItems(cat){
+  const wrap=document.getElementById('category-items');
+  if(!wrap||!cat) return;
+  wrap.innerHTML=cat.items.map(item=>`<button type="button" class="category-item-btn${item[0]===currentCalc?' on':''}" data-calc-id="${item[0]}" onclick="selectCalc('${item[0]}')">${item[1]}</button>`).join('');
+}
+function selectCategory(categoryId){
+  const cat=CATEGORY_CONFIG.find(x=>x.id===categoryId) || CATEGORY_CONFIG[0];
+  const calcSel=document.getElementById('calc-select');
+  calcSel.innerHTML=cat.items.map(item=>`<option value="${item[0]}">${item[1]}</option>`).join('');
+  const target=cat.items[0][0];
+  calcSel.value=target;
+  currentCalc=target;
+  renderCategoryItems(cat);
+  renderForm(target);
+}
+function selectCalc(id){
+  const cat=getCategoryByCalc(id);
+  if(cat){
+    const categorySel=document.getElementById('category-select');
+    if(categorySel && categorySel.value!==cat.id){
+      categorySel.value=cat.id;
+      const calcSel=document.getElementById('calc-select');
+      calcSel.innerHTML=cat.items.map(item=>`<option value="${item[0]}">${item[1]}</option>`).join('');
+    }
+    const calcSel=document.getElementById('calc-select');
+    if(calcSel) calcSel.value=id;
+    currentCalc=id;
+    renderCategoryItems(cat);
+  }
+  renderForm(id);
+}
+function initCategorySelector(initialCalc){
+  const categorySel=document.getElementById('category-select');
+  if(!categorySel) return;
+  categorySel.innerHTML=CATEGORY_CONFIG.map(cat=>`<option value="${cat.id}">${cat.label}</option>`).join('');
+  const cat=getCategoryByCalc(initialCalc) || CATEGORY_CONFIG[0];
+  categorySel.value=cat.id;
+  const calcSel=document.getElementById('calc-select');
+  calcSel.innerHTML=cat.items.map(item=>`<option value="${item[0]}">${item[1]}</option>`).join('');
+  calcSel.value=initialCalc;
+  currentCalc=initialCalc;
+  renderCategoryItems(cat);
+}
+
 function renderForm(id){
   currentCalc = id;
   document.getElementById('res-card').classList.add('hidden');
@@ -4465,6 +4530,7 @@ function calculateHoma2() {
 }
 
 // 初期表示
+initCategorySelector('homa-beta');
 renderForm('homa-beta');
 </script>
 
