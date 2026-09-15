@@ -15,6 +15,7 @@ https://masao172.github.io/metano-endo-clinical-tools/
 - 内分泌：SIADH、甲状腺、下垂体・副腎負荷試験など
 - 腎・栄養：CKD/糖尿病性腎症分類、肥満・糖尿病・CKDを考慮した栄養管理
 - 脂質：LDL管理、Fredrickson/WHO表現型の参考推定、Friedewald LDL、non-HDL-C
+- 血液・貧血：MCV・網赤血球反応・鉄代謝・B12/葉酸・溶血所見を用いた貧血鑑別と次の検査
 - その他：FIB-4、TSAT、ABSI、インスリンポンプ初期設定など
 
 ### 測定限界値の入力
@@ -78,3 +79,8 @@ Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC B
 
 ## 2026-09-13 更新
 CrCl、eGFR、尿浸透圧、JCS/GCS、Harris–Benedict TEE、久山町/吹田スコア、自由水/体液欠乏量、AVS、NFS、中尾式、CPI+SUITを追加。
+
+
+## 2026-09-15 更新
+- 「貧血の鑑別・次に行う検査」を追加（全57項目）
+- Hb/MCV、RPI、鉄代謝、B12/葉酸、溶血、CKD/炎症、他系統血球減少を統合して鑑別と次の検査を表示

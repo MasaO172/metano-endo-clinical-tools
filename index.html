@@ -191,7 +191,7 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
 <header>
   <div class="badge">🩺 臨床計算ツール集</div>
   <h1>代謝・内分泌 臨床計算・診療支援ツール</h1>
-  <p class="subtitle">HOMA2（Oxford DTU検証データに基づく近似）を含む全56項目に対応</p>
+  <p class="subtitle">HOMA2（Oxford DTU検証データに基づく近似）を含む全57項目に対応</p>
 </header>
 
 <div class="copyright-box">
@@ -271,6 +271,9 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
       <option value="tsat">TSAT（トランスフェリン飽和度）</option>
       <option value="nakao-iron">必要鉄量（中尾の式）</option>
     </optgroup>
+    <optgroup label="血液・貧血">
+      <option value="anemia-diff">貧血の鑑別・次に行う検査</option>
+    </optgroup>
     <optgroup label="脂質・動脈硬化リスク">
       <option value="hisayama-score">久山町スコア（10年ASCVDリスク）</option>
       <option value="suita-score">吹田スコア（10年冠動脈疾患リスク）</option>
@@ -311,7 +314,7 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
 <div class="notice">
   <strong>ご利用にあたって</strong><br>
   本ツールの計算結果は参考値です。診断・治療方針の決定は必ず医師の判断に基づいて行ってください。<br><br>
-  <strong>ホルモン負荷試験：</strong>日本内分泌学会の診療ガイドライン等を基にした参考判定です。測定法・施設基準・薬剤影響・患者背景により解釈が変わるため、実施・最終判定は内分泌専門医の管理下で行ってください。高張食塩水負荷、水制限試験、バソプレシン負荷などは医療機関で厳重な監視下に行う検査です。SIADH判定は日本内分泌学会2023年版の診断基準に沿った診断補助であり、副腎・甲状腺の数値判定は測定法・採血時刻・施設基準を踏まえたスクリーニングです。低Na血症・高Na血症・高Ca血症・低K血症・高K血症の鑑別も診断補助であり、緊急度、薬剤、輸液、腎機能、臨床所見を優先してください。Na異常では発症速度と神経症状を必ず別途評価してください。<br><br>
+  <strong>ホルモン負荷試験：</strong>日本内分泌学会の診療ガイドライン等を基にした参考判定です。測定法・施設基準・薬剤影響・患者背景により解釈が変わるため、実施・最終判定は内分泌専門医の管理下で行ってください。高張食塩水負荷、水制限試験、バソプレシン負荷などは医療機関で厳重な監視下に行う検査です。SIADH判定は日本内分泌学会2023年版の診断基準に沿った診断補助であり、副腎・甲状腺の数値判定は測定法・採血時刻・施設基準を踏まえたスクリーニングです。低Na血症・高Na血症・高Ca血症・低K血症・高K血症および貧血の鑑別も診断補助であり、緊急度、薬剤、輸液、腎機能、出血・溶血所見、臨床所見を優先してください。Na異常では発症速度と神経症状を、貧血では循環動態・活動性出血・他系統血球減少を必ず別途評価してください。<br><br>
   HOMA2はOxford大学 DTU <strong>HOMA2 v2.2.4の検証データ</strong>（441点×3モード）を用いた<strong>非公式の近似実装</strong>です。格子点間は双三次補間（4x4近傍のCatmull-Romスプライン、オーバーシュート防止のクランプ付き）で算出するため、検証グリッド点以外ではOxford公式Calculatorと完全一致する保証はありません（通常は1%未満、条件により数%の差が生じ得ます）。研究・診療で厳密な値が必要な場合はOxford公式Calculatorを優先してください。<br>
   参考: Levy JC et al., Diabetes Care 1998;21:2191-92　
   <a href="https://www.dtu.ox.ac.uk/homacalculator/" target="_blank">公式サイト</a>
@@ -3524,6 +3527,358 @@ const CALCS = [
           ]},
         ],
         interpretation:{cls:interpCls, html}
+      };
+    }
+  },
+
+  {
+    id:'anemia-diff', title:'貧血の鑑別・次に行う検査',
+    desc:'Hb・MCV・網赤血球反応を軸に、鉄欠乏、炎症/CKD、溶血・出血、ビタミンB12/葉酸欠乏、肝疾患・甲状腺機能低下、薬剤、骨髄疾患などを整理します。入力できる項目だけで段階的に鑑別し、次に行う検査を提示します。',
+    inputs:[
+      {label:'性別',type:'select',options:[{value:'male',label:'男性'},{value:'female',label:'女性'}]},
+      {label:'妊娠',type:'select',options:[
+        {value:'none',label:'非妊娠／該当なし'},
+        {value:'trim1',label:'妊娠 第1三半期'},
+        {value:'trim2',label:'妊娠 第2三半期'},
+        {value:'trim3',label:'妊娠 第3三半期'}
+      ]},
+      {label:'Hb',unit:'g/dL',ph:'10.5'},
+      {label:'Ht（任意）',unit:'%',ph:'32',optional:true},
+      {label:'赤血球数（任意）',unit:'万/μL',ph:'420',optional:true},
+      {label:'MCV',unit:'fL',ph:'76'},
+      {label:'網赤血球（任意）',unit:'%',ph:'1.5',optional:true},
+      {label:'白血球数（任意）',unit:'/μL',ph:'5200',optional:true},
+      {label:'血小板数（任意）',unit:'万/μL',ph:'24',optional:true},
+      {label:'フェリチン（任意）',unit:'ng/mL',ph:'18',optional:true},
+      {label:'血清鉄 Fe（任意）',unit:'μg/dL',ph:'45',optional:true},
+      {label:'TIBC（任意）',unit:'μg/dL',ph:'360',optional:true},
+      {label:'CRP（任意）',unit:'mg/dL',ph:'0.10',optional:true},
+      {label:'eGFR（任意）',unit:'mL/分/1.73m²',ph:'55',optional:true},
+      {label:'ビタミンB12（任意）',unit:'pg/mL',ph:'250',optional:true},
+      {label:'葉酸（任意）',unit:'ng/mL',ph:'5.0',optional:true},
+      {label:'LDH',type:'select',options:[
+        {value:'notdone',label:'未評価'},{value:'normal',label:'施設基準内'},{value:'high',label:'高値'}
+      ]},
+      {label:'間接ビリルビン',type:'select',options:[
+        {value:'notdone',label:'未評価'},{value:'normal',label:'施設基準内'},{value:'high',label:'高値'}
+      ]},
+      {label:'ハプトグロビン',type:'select',options:[
+        {value:'notdone',label:'未評価'},{value:'normal',label:'施設基準内'},{value:'low',label:'低値'}
+      ]},
+      {label:'直接抗グロブリン試験（DAT）',type:'select',options:[
+        {value:'notdone',label:'未検査'},{value:'negative',label:'陰性'},{value:'positive',label:'陽性'}
+      ]},
+      {label:'末梢血塗抹',type:'select',options:[
+        {value:'notdone',label:'未評価'},
+        {value:'none',label:'特記所見なし'},
+        {value:'schisto',label:'破砕赤血球あり'},
+        {value:'sphero',label:'球状赤血球あり'},
+        {value:'target',label:'標的赤血球あり'},
+        {value:'hyperseg',label:'過分葉好中球／巨赤芽球性変化'},
+        {value:'dysplasia',label:'芽球・異形成など骨髄疾患を疑う所見'}
+      ]},
+      {label:'活動性出血／最近の明らかな出血',type:'select',options:[
+        {value:'no',label:'なし'},{value:'yes',label:'あり'},{value:'unknown',label:'不明'}
+      ]},
+      {label:'慢性炎症・感染症・悪性腫瘍・自己免疫疾患',type:'select',options:[
+        {value:'no',label:'なし／不明'},{value:'yes',label:'あり'}
+      ]},
+      {label:'大量飲酒または肝疾患',type:'select',options:[
+        {value:'no',label:'なし／不明'},{value:'yes',label:'あり'}
+      ]},
+      {label:'甲状腺機能低下症を疑う／既知',type:'select',options:[
+        {value:'no',label:'なし／不明'},{value:'yes',label:'あり'}
+      ]},
+      {label:'大球性貧血を来し得る薬剤',type:'select',options:[
+        {value:'no',label:'なし／不明'},{value:'yes',label:'あり（抗代謝薬・一部抗てんかん薬など）'}
+      ]},
+      {label:'胸痛・失神・安静時呼吸困難・循環不安定',type:'select',options:[
+        {value:'no',label:'なし'},{value:'yes',label:'あり'}
+      ]},
+    ],
+    validate:(v)=>{
+      const [sex,preg,hb,hct,rbc,mcv,retic,wbc,plt,ferritin,fe,tibc,crp,egfr,b12,folate]=v;
+      if(isNaN(hb)||isNaN(mcv)) return 'HbとMCVを入力してください。';
+      if(hb<=0||mcv<=0) return 'HbとMCVは正の値を入力してください。';
+      if(sex==='male' && preg!=='none') return '男性では妊娠は「非妊娠／該当なし」を選択してください。';
+      if(!isNaN(hct) && (hct<=0 || hct>75)) return 'Htは0超〜75%以下の範囲で入力してください。';
+      if(!isNaN(rbc) && rbc<=0) return '赤血球数は正の値を入力してください。';
+      if(!isNaN(retic) && retic<0) return '網赤血球は0以上で入力してください。';
+      if(!isNaN(wbc) && wbc<0) return '白血球数は0以上で入力してください。';
+      if(!isNaN(plt) && plt<0) return '血小板数は0以上で入力してください。';
+      if(!isNaN(ferritin) && ferritin<0) return 'フェリチンは0以上で入力してください。';
+      if(!isNaN(fe) && fe<0) return '血清鉄は0以上で入力してください。';
+      if(!isNaN(tibc) && tibc<=0) return 'TIBCは正の値を入力してください。';
+      if(!isNaN(crp) && crp<0) return 'CRPは0以上で入力してください。';
+      if(!isNaN(egfr) && egfr<=0) return 'eGFRは正の値を入力してください。';
+      if(!isNaN(b12) && b12<0) return 'ビタミンB12は0以上で入力してください。';
+      if(!isNaN(folate) && folate<0) return '葉酸は0以上で入力してください。';
+      return null;
+    },
+    compute:(v)=>{
+      const [sex,preg,hb,hct,rbc,mcv,retic,wbc,plt,ferritin,fe,tibc,crp,egfr,b12,folate,
+             ldh,ibil,hp,dat,smear,bleeding,inflam,alcoholLiver,hypothyroid,macroDrug,urgentSymptoms]=v;
+
+      const add=(arr,x)=>{ if(x && !arr.includes(x)) arr.push(x); };
+      const likely=[], diff=[], next=[], caution=[];
+
+      // WHO 2024成人Hbカットオフ（海面レベルの参考値）
+      let anemiaCut=sex==='male'?13.0:12.0;
+      let severeLow=8.0;
+      let pregnancyLabel='非妊娠';
+      if(preg!=='none'){
+        pregnancyLabel = preg==='trim1'?'妊娠第1三半期':(preg==='trim2'?'妊娠第2三半期':'妊娠第3三半期');
+        anemiaCut = preg==='trim2'?10.5:11.0;
+        severeLow = 7.0;
+      }
+
+      const hasAnemia=hb<anemiaCut;
+      let severity='貧血なし（WHO基準上）';
+      if(hasAnemia){
+        if(preg!=='none'){
+          const moderateUpper = preg==='trim2' ? 9.5 : 10.0;
+          if(hb<7.0) severity='重度';
+          else if(hb<moderateUpper) severity='中等度';
+          else severity='軽度';
+        } else {
+          if(hb<8.0) severity='重度';
+          else if(hb<11.0) severity='中等度';
+          else severity='軽度';
+        }
+      }
+
+      let morph='正球性';
+      if(mcv<80) morph='小球性';
+      else if(mcv>100) morph='大球性';
+
+      // 網赤血球反応
+      let rpi=NaN, absRetic=NaN, reticText='未評価', regenerative=false;
+      if(!isNaN(retic) && !isNaN(rbc)) absRetic=rbc*retic/100; // 万/μL × % /100 → 10^4/μL
+      if(!isNaN(retic) && !isNaN(hct)){
+        let maturation=1;
+        if(hct<16) maturation=2.5;
+        else if(hct<26) maturation=2.0;
+        else if(hct<36) maturation=1.5;
+        rpi=retic*(hct/45)/maturation;
+        if(rpi>=3){reticText='著明な再生反応（RPI ≥3）';regenerative=true;}
+        else if(rpi>=2){reticText='再生反応あり（RPI ≥2）';regenerative=true;}
+        else reticText='骨髄反応不十分／低産生パターン（RPI <2）';
+      } else if(!isNaN(retic)){
+        if(retic>=2.5){reticText='網赤血球増加あり（Ht補正なしの参考）';regenerative=true;}
+        else reticText='網赤血球は入力済み（Ht未入力のためRPI未算出）';
+      }
+
+      // 鉄代謝
+      const tsat=(!isNaN(fe)&&!isNaN(tibc)&&tibc>0)?(fe/tibc*100):NaN;
+      let ironText='未評価';
+      const inflammatory = inflam==='yes' || (!isNaN(crp)&&crp>0.3);
+      const ckd = !isNaN(egfr) && egfr<60;
+      const ferritinLow = !isNaN(ferritin) && ferritin<30;
+      const tsatLow = !isNaN(tsat) && tsat<20;
+
+      if(ferritinLow){
+        ironText = ferritin<15 ? '貯蔵鉄欠乏を強く示唆（フェリチン <15）' : '鉄欠乏を支持（フェリチン <30）';
+        add(likely,'鉄欠乏性貧血');
+      } else if(ckd && tsatLow && !isNaN(ferritin)){
+        if(ferritin<100){
+          ironText='CKDでの全身性鉄欠乏パターン（TSAT <20%、フェリチン <100）';
+          add(likely,'CKDに合併した鉄欠乏');
+        } else {
+          ironText='CKD/炎症での鉄利用制限を示唆（TSAT <20%、フェリチン保たれる）';
+          add(likely,'CKD・炎症に伴う鉄利用障害');
+        }
+      } else if(tsatLow && inflammatory){
+        ironText='炎症下の鉄利用制限を示唆（TSAT <20%）';
+        add(likely,'慢性炎症に伴う貧血／鉄利用障害');
+        if(!isNaN(ferritin) && ferritin<100) add(diff,'鉄欠乏の併存');
+      } else if(tsatLow){
+        ironText='利用可能鉄低下（TSAT <20%）：鉄欠乏を含め評価';
+        add(diff,'鉄欠乏性貧血');
+      } else if(!isNaN(ferritin) || !isNaN(tsat)){
+        ironText='入力範囲では明らかな鉄欠乏パターンなし';
+      }
+
+      // Mentzer index
+      let mentzer=NaN, mentzerText='未算出';
+      if(!isNaN(rbc) && rbc>0){
+        const rbcmillion=rbc/100;
+        mentzer=mcv/rbcmillion;
+        mentzerText=mentzer<13?'13未満：サラセミアtrait側の参考':'13以上：鉄欠乏側の参考';
+      }
+
+      // ビタミン
+      let b12Text='未評価';
+      if(!isNaN(b12)){
+        if(b12<180){b12Text='ビタミンB12欠乏を支持（NICE: <180 pg/mL）';add(likely,'ビタミンB12欠乏');}
+        else if(b12<=350){b12Text='B12境界域（180〜350 pg/mL）';add(diff,'ビタミンB12欠乏');add(next,'症状・リスクがあればMMA（またはホモシステイン）');}
+        else b12Text='B12欠乏は低そう（>350 pg/mL）';
+      }
+      let folateText='未評価';
+      if(!isNaN(folate)){
+        if(folate<3){folateText='葉酸欠乏を支持（<3 ng/mLの参考域）';add(likely,'葉酸欠乏');}
+        else if(folate<4){folateText='葉酸低値〜境界域（施設基準優先）';add(diff,'葉酸欠乏');}
+        else folateText='明らかな葉酸欠乏を支持しない';
+      }
+
+      // 溶血
+      const hemolysisMarkers=[ldh==='high',ibil==='high',hp==='low'].filter(Boolean).length;
+      const hemolysisPattern = hemolysisMarkers>=2 || dat==='positive' || smear==='schisto' ||
+                              (regenerative && hemolysisMarkers>=1);
+      if(hemolysisPattern){
+        add(likely,'溶血性貧血');
+        if(dat==='positive') add(likely,'免疫性溶血（DAT陽性）');
+        if(smear==='schisto'){
+          add(likely,'微小血管障害性溶血（TMA/DIC等）');
+          add(caution,'破砕赤血球がある場合は血小板、腎機能、凝固系、臓器障害を至急評価');
+        }
+        if(smear==='sphero'){
+          if(dat==='positive') add(likely,'自己免疫性溶血性貧血');
+          else add(diff,'遺伝性球状赤血球症など');
+        }
+        add(next,'LDH・間接Bil・ハプトグロビン・DAT・末梢血塗抹を揃えて溶血を確認');
+      }
+
+      if(bleeding==='yes'){
+        add(likely,'急性/慢性出血による貧血');
+        add(next,'出血源の評価（消化管・婦人科・尿路など）');
+      }
+
+      // 形態別の主鑑別
+      if(morph==='小球性'){
+        if(!ferritinLow && !tsatLow && !isNaN(mentzer) && mentzer<13){
+          add(likely,'サラセミアtrait／ヘモグロビン異常症');
+        } else {
+          add(diff,'サラセミアtrait／ヘモグロビン異常症');
+        }
+        if(inflammatory) add(diff,'慢性炎症に伴う貧血');
+        add(diff,'鉄芽球性貧血・鉛中毒（病歴/塗抹所見に応じて）');
+        if(isNaN(ferritin)) add(next,'フェリチン');
+        if(isNaN(tsat)) add(next,'血清鉄＋TIBCからTSAT');
+        if(!ferritinLow && !tsatLow) add(next,'Hb分画/ヘモグロビン解析（鉄欠乏が否定的で小球性が持続する場合）');
+        if(ferritinLow || tsatLow) add(next,'鉄欠乏の原因検索：月経量、消化管出血、栄養・吸収障害');
+      } else if(morph==='正球性'){
+        if(regenerative){
+          add(diff,'出血または溶血');
+        } else {
+          if(ckd) add(likely,'CKDに伴う腎性貧血');
+          if(inflammatory) add(likely,'慢性炎症に伴う貧血');
+          if(hypothyroid==='yes') add(diff,'甲状腺機能低下症');
+          add(diff,'初期の鉄欠乏／混合性欠乏');
+          add(diff,'骨髄低形成・MDSなど低産生性貧血');
+        }
+        if(isNaN(retic)) add(next,'網赤血球（可能ならHtと併せRPI）');
+        if(isNaN(egfr)) add(next,'Cr/eGFR');
+        if(isNaN(ferritin) || isNaN(tsat)) add(next,'フェリチン・TSAT');
+      } else {
+        if(regenerative) add(diff,'溶血・出血後の網赤血球増加による大球性');
+        if(alcoholLiver==='yes') add(likely,'アルコール関連／肝疾患関連の大球性');
+        if(hypothyroid==='yes') add(likely,'甲状腺機能低下症');
+        if(macroDrug==='yes') add(likely,'薬剤性大球性');
+        if(smear==='hyperseg') add(likely,'巨赤芽球性貧血');
+        add(diff,'MDS・骨髄疾患');
+        if(isNaN(b12)) add(next,'ビタミンB12');
+        if(isNaN(folate)) add(next,'葉酸');
+        add(next,'肝機能・TSH・末梢血塗抹');
+        if(!regenerative && b12Text.indexOf('欠乏')<0 && folateText.indexOf('欠乏')<0) add(next,'原因不明が持続する場合は血液内科相談／骨髄評価');
+      }
+
+      // 塗抹・他系統
+      const leukopenia=!isNaN(wbc)&&wbc<4000;
+      const thrombocytopenia=!isNaN(plt)&&plt<15;
+      if(leukopenia || thrombocytopenia || smear==='dysplasia'){
+        add(diff,'MDS・再生不良性貧血・造血器腫瘍など骨髄疾患');
+        add(next,'白血球分画・末梢血塗抹の再確認、血液内科相談');
+        if(smear==='dysplasia') add(caution,'芽球/異形成を疑う所見がある場合は早めの血液内科評価');
+      }
+      if(smear==='target'){
+        add(diff,'肝疾患・サラセミア/ヘモグロビン異常症');
+      }
+
+      if(ckd && !likely.some(x=>x.indexOf('CKD')>=0)) add(diff,'CKDに伴う腎性貧血');
+      if(inflammatory && !likely.some(x=>x.indexOf('炎症')>=0)) add(diff,'慢性炎症に伴う貧血');
+      if(hypothyroid==='yes' && !likely.includes('甲状腺機能低下症')) add(diff,'甲状腺機能低下症');
+
+      // 共通の次の一手
+      if(isNaN(retic)) add(next,'網赤血球');
+      if(smear==='notdone') add(next,'末梢血塗抹');
+      if(isNaN(ferritin)) add(next,'フェリチン');
+      if(isNaN(tsat)) add(next,'TSAT（Fe/TIBC）');
+      if(hemolysisPattern===false && regenerative) add(next,'溶血セット（LDH・間接Bil・ハプトグロビン・DAT）');
+      if(morph==='正球性' && !regenerative && isNaN(b12) && isNaN(folate)) add(next,'B12/葉酸（混合性欠乏でMCVが正常化することあり）');
+
+      // 緊急性
+      const severe = hasAnemia && hb<severeLow;
+      let urgent=false;
+      if(urgentSymptoms==='yes' || bleeding==='yes' || severe || smear==='schisto') urgent=true;
+      if(urgentSymptoms==='yes') add(caution,'胸痛・失神・安静時呼吸困難・循環不安定があれば数値にかかわらず緊急評価');
+      if(severe) add(caution,`WHO重度域（Hb ${preg!=='none'?'<7.0':'<8.0'} g/dL）に該当：症状・循環動態・出血の有無を含め迅速に評価`);
+      if(bleeding==='yes') add(caution,'活動性出血があれば原因検索と止血・循環管理を優先');
+
+      if(!hasAnemia){
+        add(caution,'WHOのHb基準上は貧血を満たしません。MCV異常や症状がある場合は前段階・他疾患を評価してください。');
+      }
+      if(mcv>=80 && mcv<=100 && (ferritinLow || (!isNaN(b12)&&b12<180) || (!isNaN(folate)&&folate<3))){
+        add(caution,'複数の欠乏が併存するとMCVが相殺されて正球性に見えることがあります。');
+      }
+
+      const primary = likely.length ? likely.join(' ／ ') : '入力所見だけでは単一原因に絞れません';
+      const differential = diff.length ? diff.join(' ／ ') : '追加所見に応じて評価';
+      const nextText = next.length ? next.join(' ／ ') : '現時点の入力で主要評価項目は概ね揃っています';
+
+      let cls='brd';
+      if(!hasAnemia) cls='ok';
+      if(hasAnemia && (severity==='中等度' || severity==='重度')) cls='hi';
+      if(urgent || hemolysisPattern || smear==='dysplasia' || leukopenia || thrombocytopenia) cls='hi';
+
+      const reticResults=[
+        {label:'網赤血球',text:isNaN(retic)?'未入力':`${retic.toFixed(2)} %`},
+        {label:'RPI',text:isNaN(rpi)?'—':rpi.toFixed(2)},
+        {label:'骨髄反応',text:reticText,wide:true}
+      ];
+      if(!isNaN(absRetic)) reticResults.push({label:'絶対網赤血球',text:`${absRetic.toFixed(1)} ×10⁴/μL`});
+
+      const ironResults=[
+        {label:'フェリチン',text:isNaN(ferritin)?'未入力':`${ferritin.toFixed(1)} ng/mL`},
+        {label:'TSAT',text:isNaN(tsat)?'—':`${tsat.toFixed(1)} %`},
+        {label:'鉄評価',text:ironText,wide:true},
+        {label:'Mentzer index',text:isNaN(mentzer)?'—':`${mentzer.toFixed(1)}（${mentzerText}）`,wide:true},
+      ];
+
+      const vitaminResults=[
+        {label:'Vitamin B12',text:isNaN(b12)?'未入力':`${b12.toFixed(0)} pg/mL：${b12Text}`,wide:true},
+        {label:'葉酸',text:isNaN(folate)?'未入力':`${folate.toFixed(1)} ng/mL：${folateText}`,wide:true},
+      ];
+
+      const html=`<strong>📌 貧血鑑別のまとめ</strong><br>`
+        + `${pregnancyLabel}、Hb ${hb.toFixed(1)} g/dL：<strong>${hasAnemia?`${severity}貧血`:'WHO基準上は貧血なし'}</strong>。MCV ${mcv.toFixed(1)} fLで<strong>${morph}</strong>です。<br>`
+        + (!isNaN(rpi)?`RPI ${rpi.toFixed(2)}：${reticText}。<br>`:'')
+        + `<br><strong>優先して考える病態：</strong>${primary}<br>`
+        + `<strong>その他の鑑別：</strong>${differential}<br>`
+        + `<strong>次に確認：</strong>${nextText}`
+        + (caution.length?`<div class="kidney-note"><strong>${urgent?'⚠️ 緊急性・重要所見':'注意'}</strong><br>${caution.join('<br>')}</div>`:'')
+        + `<div style="margin-top:.7rem;font-size:.74rem;">`
+        + `参考：WHO 2024 Hbカットオフ、一般的なMCV/網赤血球による貧血評価、KDIGO 2026 CKD貧血、NICE 2024 Vitamin B12。`
+        + `フェリチン・CRP・B12・葉酸などは測定法と施設基準を優先してください。Mentzer indexはスクリーニング補助であり確定診断には用いません。`
+        + `</div>`;
+
+      return {
+        sections:[
+          {title:'🩸 貧血の確認・形態',results:[
+            {label:'Hb',text:`${hb.toFixed(1)} g/dL`},
+            {label:'WHO基準',text:hasAnemia?`${severity}貧血`:'貧血なし'},
+            {label:'MCV',text:`${mcv.toFixed(1)} fL`},
+            {label:'形態分類',text:morph},
+          ]},
+          {title:'🔁 骨髄反応',results:reticResults},
+          {title:'🧲 鉄代謝・補助指標',results:ironResults},
+          {title:'🧬 B12・葉酸',results:vitaminResults},
+          {title:'🔎 鑑別疾患・次に確認',results:[
+            {label:'優先鑑別',text:primary,wide:true},
+            {label:'その他の鑑別',text:differential,wide:true},
+            {label:'次に行う検査・評価',text:nextText,wide:true},
+          ]},
+        ],
+        interpretation:{cls,html}
       };
     }
   },
