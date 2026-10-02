@@ -1308,11 +1308,13 @@ const CALCS = [
   {
     id:'absi', title:'ABSI (A Body Shape Index)',
     desc:'身長・体重・腹囲から体格に対する腹囲の大きさを表すABSIを算出します。ABSIに普遍的な臨床診断カットオフはありません。日本人データではABSI約0.080以上が高CAVIと関連し、心血管イベント予測では男女別に約0.082前後のカットオフが報告されています。内臓脂肪量そのものを診断する指標ではありません。',
-    inputs:[{label:'身長',unit:'m',ph:'1.65'},{label:'体重',unit:'kg',ph:'60'},{label:'腹囲',unit:'m',ph:'0.85'}],
+    inputs:[{label:'身長',unit:'cm',ph:'165'},{label:'体重',unit:'kg',ph:'60'},{label:'腹囲',unit:'cm',ph:'85'}],
     validate:(v)=> baseValidate(v),
     compute:(v)=>{
-      const bmi=v[1]/(v[0]*v[0]);
-      const val=v[2]/(Math.pow(bmi,2/3)*Math.sqrt(v[0]));
+      const heightM=v[0]/100;
+      const waistM=v[2]/100;
+      const bmi=v[1]/(heightM*heightM);
+      const val=waistM/(Math.pow(bmi,2/3)*Math.sqrt(heightM));
       const interp = val>=0.080
         ? {cls:'brd', html:`<strong>参考：日本人研究の高値域</strong><br>ABSI = ${val.toFixed(4)}。日本人一般集団で高CAVIとの関連が報告された約0.080以上に該当します。<br>ただしABSIには確立した単一の診断基準はなく、年齢・性別・対象集団でカットオフが異なります。`}
         : {cls:'ok', html:`<strong>参考</strong><br>ABSI = ${val.toFixed(4)}。日本人一般集団で高CAVIとの関連が報告された約0.080未満です。<br>ABSI単独で内臓脂肪蓄積や心血管リスクを確定することはできません。`};
