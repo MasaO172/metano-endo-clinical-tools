@@ -207,7 +207,7 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
 <header>
   <div class="badge">🩺 臨床計算ツール集</div>
   <h1>代謝・内分泌 臨床計算・診療支援ツール</h1>
-  <p class="subtitle">HOMA2（Oxford DTU検証データに基づく近似）を含む全56項目に対応</p>
+  <p class="subtitle">HOMA2（Oxford DTU検証データに基づく近似）を含む全57項目に対応</p>
 </header>
 
 <div class="copyright-box">
@@ -257,7 +257,7 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
 <div class="notice">
   <strong>ご利用にあたって</strong><br>
   本ツールの計算結果は参考値です。診断・治療方針の決定は必ず医師の判断に基づいて行ってください。<br><br>
-  <strong>ホルモン負荷試験：</strong>日本内分泌学会の診療ガイドライン等を基にした参考判定です。測定法・施設基準・薬剤影響・患者背景により解釈が変わるため、実施・最終判定は内分泌専門医の管理下で行ってください。高張食塩水負荷、水制限試験、バソプレシン負荷などは医療機関で厳重な監視下に行う検査です。SIADH判定は日本内分泌学会2023年版の診断基準に沿った診断補助であり、副腎・甲状腺の数値判定は測定法・採血時刻・施設基準を踏まえたスクリーニングです。低Na血症・高Na血症・高Ca血症・低K血症・高K血症および貧血の鑑別も診断補助であり、緊急度、薬剤、輸液、腎機能、出血・溶血所見、臨床所見を優先してください。Na異常では発症速度と神経症状を、貧血では循環動態・活動性出血・他系統血球減少を必ず別途評価してください。<br><br>
+  <strong>ホルモン負荷試験：</strong>日本内分泌学会の診療ガイドライン等を基にした参考判定です。測定法・施設基準・薬剤影響・患者背景により解釈が変わるため、実施・最終判定は内分泌専門医の管理下で行ってください。高張食塩水負荷、水制限試験、バソプレシン負荷などは医療機関で厳重な監視下に行う検査です。副腎皮質機能低下のステロイドカバーは添付資料の身体的ストレス分類を参考表示するもので、個々の患者背景・循環動態・施設プロトコルを優先してください。SIADH判定は日本内分泌学会2023年版の診断基準に沿った診断補助であり、副腎・甲状腺の数値判定は測定法・採血時刻・施設基準を踏まえたスクリーニングです。低Na血症・高Na血症・高Ca血症・低K血症・高K血症および貧血の鑑別も診断補助であり、緊急度、薬剤、輸液、腎機能、出血・溶血所見、臨床所見を優先してください。Na異常では発症速度と神経症状を、貧血では循環動態・活動性出血・他系統血球減少を必ず別途評価してください。<br><br>
   HOMA2はOxford大学 DTU <strong>HOMA2 v2.2.4の検証データ</strong>（441点×3モード）を用いた<strong>非公式の近似実装</strong>です。格子点間は双三次補間（4x4近傍のCatmull-Romスプライン、オーバーシュート防止のクランプ付き）で算出するため、検証グリッド点以外ではOxford公式Calculatorと完全一致する保証はありません（通常は1%未満、条件により数%の差が生じ得ます）。研究・診療で厳密な値が必要な場合はOxford公式Calculatorを優先してください。<br>
   参考: Levy JC et al., Diabetes Care 1998;21:2191-92　
   <a href="https://www.dtu.ox.ac.uk/homacalculator/" target="_blank">公式サイト</a>
@@ -2357,6 +2357,91 @@ const CALCS = [
     }
   },
   {
+    id:'adrenal-stress-cover', title:'副腎皮質機能低下：身体的ストレス時のステロイドカバー',
+    desc:'副腎皮質機能低下症で身体的ストレスが加わる際のグルココルチコイド補充量の目安です。添付資料「虎の門病院内分泌クリニカルプラクティス」表3の内容を、手術・処置／疾患ごとの選択式に整理しています（同表は Jung C, et al. Med J Aust 2008;188:409 を引用改変）。',
+    inputs:[
+      {label:'臨床状況を選択',type:'select',options:[
+        {value:'s-minimal',label:'【手術・処置】1時間以内の局所小麻酔手術・歯科治療（Minimal）'},
+        {value:'s-minor-procedure',label:'【手術・処置】鼠径ヘルニア手術・大腸内視鏡（Minor）'},
+        {value:'s-minor-long',label:'【手術・処置】1時間以上を要する局所小麻酔手術・歯科手術（Minor）'},
+        {value:'s-moderate',label:'【手術】胆摘・大腸部分切除・人工関節置換・子宮摘出（Moderate）'},
+        {value:'s-severe',label:'【手術】胸部/心臓・膵頭十二指腸切除・食道癌・肝切除・下垂体（Severe）'},
+        {value:'s-critical',label:'【重症】重症外傷・重症合併症（Critical illness / ICU）'},
+        {value:'m-minimal',label:'【疾患】発熱を伴わない風邪・上気道炎（Minimal）'},
+        {value:'m-minor',label:'【疾患】ウイルス感染・気管支炎・膀胱炎・蜂窩織炎（Minor）'},
+        {value:'m-moderate',label:'【疾患】急性胃腸炎・急性肺炎・急性腎盂腎炎（Moderate）'},
+        {value:'m-severe',label:'【疾患】急性膵炎・心筋梗塞・出産（Severe）'},
+        {value:'m-critical',label:'【疾患】敗血症（Critical illness / ICU）'}
+      ]}
+    ],
+    validate:(v)=> !v[0] ? '臨床状況を選択してください。' : null,
+    compute:(v)=>{
+      const rows={
+        's-minimal':{
+          level:'Minimal',kind:'手術・処置',example:'1時間以内の局所小麻酔手術、歯科治療',
+          cover:'通常補充量のまま',detail:'例：コートリル 15 mg/日。'
+        },
+        's-minor-procedure':{
+          level:'Minor',kind:'手術・処置',example:'鼠径ヘルニア手術、大腸内視鏡',
+          cover:'処置時にソル・コーテフ 25 mg 静注',detail:'その後は通常どおり。'
+        },
+        's-minor-long':{
+          level:'Minor',kind:'手術・処置',example:'1時間以上を要する局所小麻酔手術、歯科手術',
+          cover:'コートリルを通常量の2倍量で内服',detail:'翌日から通常どおり。'
+        },
+        's-moderate':{
+          level:'Moderate',kind:'手術',example:'胆摘手術、大腸部分切除、人工関節置換、子宮摘出手術',
+          cover:'ソル・コーテフ 25 mg を8時間ごとに静注（75 mg/日）',detail:'数日かけて漸減し、合併症・発熱がなければ通常補充量に戻す。'
+        },
+        's-severe':{
+          level:'Severe',kind:'手術',example:'胸部・心臓手術、膵頭十二指腸切除術、食道癌手術、肝切除、下垂体手術',
+          cover:'ソル・コーテフ 50 mg を8時間ごとに静注（150 mg/日）',detail:'数日かけて漸減する。合併症・発熱がなく、食事再開となれば通常補充量に戻す。'
+        },
+        's-critical':{
+          level:'Critical illness / ICU',kind:'重症',example:'重症外傷、重症合併症',
+          cover:'ソル・コーテフ 50 mg を6時間ごとに静注（200 mg/日）',detail:'または 200 mg を24時間かけて持続静注。'
+        },
+        'm-minimal':{
+          level:'Minimal',kind:'疾患',example:'発熱を伴わない風邪、上気道炎',
+          cover:'通常補充量のまま',detail:'例：コートリル 15 mg/日。'
+        },
+        'm-minor':{
+          level:'Minor',kind:'疾患',example:'ウイルス感染、気管支炎、膀胱炎、蜂窩織炎',
+          cover:'疾患が回復するまでコートリルを通常量の2〜3倍量で内服',detail:'表の目安：30〜60 mg/日を3分割。'
+        },
+        'm-moderate':{
+          level:'Moderate',kind:'疾患',example:'急性胃腸炎、急性肺炎、急性腎盂腎炎',
+          cover:'疾患が回復するまでソル・コーテフ 25 mg を8時間ごとに静注（75 mg/日）',detail:''
+        },
+        'm-severe':{
+          level:'Severe',kind:'疾患',example:'急性膵炎、心筋梗塞、出産',
+          cover:'ソル・コーテフ 50 mg を8時間ごとに静注（150 mg/日）',detail:'臨床症状の改善とともに漸減する。'
+        },
+        'm-critical':{
+          level:'Critical illness / ICU',kind:'疾患',example:'敗血症',
+          cover:'ソル・コーテフ 50 mg を6時間ごとに静注（200 mg/日）',detail:'または 200 mg を24時間かけて持続静注。'
+        }
+      };
+      const d=rows[v[0]];
+      const cls=(d.level==='Severe'||d.level.indexOf('Critical')===0)?'hi':(d.level==='Minimal'?'ok':'brd');
+      const icon=cls==='hi'?'🔴':(cls==='brd'?'⚠️':'✅');
+      return {
+        sections:[
+          {title:'ストレス分類',results:[
+            {label:'区分',text:d.level,wide:true},
+            {label:'状況',text:d.kind},
+            {label:'代表例',text:d.example,wide:true}
+          ]},
+          {title:'ステロイドカバーの目安',results:[
+            {label:'補充量',text:d.cover,wide:true},
+            ...(d.detail?[{label:'その後',text:d.detail,wide:true}]:[])
+          ]}
+        ],
+        interpretation:{cls,html:`<strong>${icon} ${d.level} stress：補充の目安</strong><br>${d.cover}${d.detail?'。'+d.detail:''}<br><br><span style="font-size:.78rem"><strong>出典：</strong>「虎の門病院内分泌クリニカルプラクティス」表3「身体的ストレスに対する補充量の目安」（Jung C, et al. Med J Aust 2008;188:409 より引用改変）。<br><strong>注意：</strong>本項目は添付資料の表を選択式に再構成した参考表示です。実際の投与は患者の循環動態、経口摂取可否、合併症、使用中のステロイド、施設プロトコル等を踏まえて医師が判断してください。</span>`}
+      };
+    }
+  },
+  {
     id:'dst05', title:'0.5 mgデキサメタゾン抑制試験',
     desc:'日本のCushing病診断アルゴリズムで用いられる0.5 mg一晩デキサメタゾン抑制試験の翌朝コルチゾールを参考判定します。3 μg/dL以上は軽症例を拾い上げるスクリーニング域、5 μg/dL以上はCushing病を支持する所見ですが、単独で確定診断はしません。',
     inputs:[
@@ -4122,6 +4207,7 @@ const CATEGORY_CONFIG = [
     ['pituitary-combined','下垂体前葉負荷（CRH・TRH・LHRH）'],
     ['ghrp2','GHRP-2負荷試験（成人GH分泌不全）'],
     ['rapid-acth','迅速ACTH負荷試験（250 μg）'],
+    ['adrenal-stress-cover','副腎皮質機能低下：身体的ストレス時のステロイドカバー'],
     ['dst05','0.5 mgデキサメタゾン抑制試験'],
     ['dst1','1 mgデキサメタゾン抑制試験'],
     ['dst8','8 mgデキサメタゾン抑制試験'],
