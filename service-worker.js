@@ -1,4 +1,4 @@
-var CACHE_NAME = 'metano-endo-clinical-tools-v14-20261027-c1507-smbg-inclusive';
+var CACHE_NAME = 'metano-endo-clinical-tools-v15-20261027-pregnancy-pump-smbg';
 var CORE_ASSETS = [
   './',
   './index.html',

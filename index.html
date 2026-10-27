@@ -4325,7 +4325,7 @@ function initCategorySelector(initialCalc){
 // ============================================================
 function renderDiabetesBillingForm(){
   const area=document.getElementById('input-area');
-  document.getElementById('calc-desc').textContent='令和8年度（2026年）の診療報酬を基に、C101 在宅自己注射指導管理料、C150 血糖自己測定器加算、C152 間歇注入シリンジポンプ加算、C152-2 持続血糖測定器加算を組み合わせて参考算定します。Libre 2／G7をC150-7で算定する場合、併用する通常SMBGはC150-7に包括され、SMBG回数区分へ切り替えたり重ねて算定したりしない扱いを明示します。G7はC150-7（1,250点）と、施設基準・患者要件を満たすC152-2の両方に対応します。最終的な算定可否は施設基準・患者要件・最新通知を確認してください。';
+  document.getElementById('calc-desc').textContent='令和8年度（2026年）の診療報酬を基に、C101 在宅自己注射指導管理料、C101-3 在宅妊娠糖尿病患者指導管理料、C150 血糖自己測定器加算、C152 間歇注入シリンジポンプ加算、C152-2 持続血糖測定器加算を組み合わせて参考算定します。2型糖尿病一般ではC150の90回・120回区分は算定対象外として明確に警告します。妊娠中の糖尿病／妊娠糖尿病では、周産期合併症リスクが高くSMBGを必要とする所定要件を満たす場合に90回・120回区分も判定します。Libre 2／G7をC150-7で算定する場合、併用する通常SMBGはC150-7に包括されます。最終的な算定可否は最新通知・患者要件・施設基準を確認してください。';
   area.innerHTML=`
     <div class="fields">
       <div class="field"><label>糖尿病の病型 <span class="req">*</span></label>
@@ -4333,6 +4333,7 @@ function renderDiabetesBillingForm(){
           <option value="t1">1型糖尿病</option>
           <option value="t2" selected>2型糖尿病</option>
           <option value="pancreatectomy">膵全摘後／膵性糖尿病（インスリン欠乏）</option>
+          <option value="pregnancy">妊娠中の糖尿病／妊娠糖尿病</option>
           <option value="other">その他の糖尿病</option>
         </select>
       </div>
@@ -4343,6 +4344,8 @@ function renderDiabetesBillingForm(){
           <option value="glp1">GLP-1受容体作動薬</option>
           <option value="tirzepatide">GIP/GLP-1受容体作動薬（チルゼパチド）</option>
           <option value="insulin-combo">インスリン ＋ GLP-1/GIP-GLP-1（併用・配合を含む）</option>
+          <option value="insulin-pump">インスリンポンプ（CSII/SAPでインスリン持続注入）</option>
+          <option value="none-pregnancy">自己注射薬なし（妊娠糖尿病でSMBGのみ）</option>
         </select>
       </div>
       <div class="field" id="bill-injection-wrap"><label>医師が指示した月間自己注射回数 <span class="req">*</span></label>
@@ -4358,6 +4361,16 @@ function renderDiabetesBillingForm(){
           <option value="sap">SAP/AID（ポンプ＋連動CGM）</option>
           <option value="none">血糖測定器・ポンプ加算なし</option>
         </select>
+      </div>
+    </div>
+
+    <div id="bill-pregnancy-wrap" class="fields hidden">
+      <div class="field"><label>妊娠中のC150/C101-3対象要件 <span class="req">*</span></label>
+        <select id="bill-pregnancy-eligible" onchange="updateDiabetesBillingUI()" style="width:100%;padding:.62rem .8rem;font-size:.92rem;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;">
+          <option value="yes">周産期合併症リスクが高く、SMBGが必要：要件を満たす</option>
+          <option value="no">要件を満たさない／不明</option>
+        </select>
+        <div class="limit-hint">C150および非インスリン時のC101-3は、妊娠中の糖尿病／妊娠糖尿病で周産期合併症の危険性が高く、血糖自己測定を必要とする所定患者が対象です。施設で最新要件を確認してください。</div>
       </div>
     </div>
 
@@ -4427,13 +4440,17 @@ function renderDiabetesBillingForm(){
         </select>
       </div>
     </div>
-    <div class="limit-guide"><strong>この画面で扱う主な項目：</strong>C101、C150、C152、C152-2。注入器加算（C151）、注入器用注射針加算（C153）、薬剤料・診察料・検査料などは合計に含めません。<br><strong>重要：</strong>C150-7（Libre 2／G7）を算定する場合、通常SMBGは所定点数に含まれ、別にC150-1〜6を算定しません。算定区分は医療機関の採算ではなく、実際に使用した機器・患者要件・施設基準に基づいて選択してください。材料加算は令和8年度から3月に3回までの運用があり、実際の請求月・まとめ算定はレセプト運用を確認してください。</div>`;
+    <div class="limit-guide"><strong>この画面で扱う主な項目：</strong>C101、C101-3、C150、C152、C152-2。注入器加算（C151）、注入器用注射針加算（C153）、薬剤料・診察料・検査料などは合計に含めません。<br><strong style="color:#b91c1c">2型糖尿病一般：</strong>SMBG 90回・120回区分は算定できません。90回/120回を選んだ場合は算定不可と表示し、SMBG回数区分として請求するなら60回以下への変更を促します。<br><strong>妊娠中の糖尿病／妊娠糖尿病：</strong>周産期合併症リスクが高くSMBGが必要な所定要件を満たす場合、90回・120回区分も対象です。<br><strong>重要：</strong>C150-7（Libre 2／G7）を算定する場合、通常SMBGは所定点数に含まれ、別にC150-1〜6を算定しません。算定区分は医療機関の採算ではなく、実際に使用した機器・患者要件・施設基準に基づいて選択してください。</div>`;
   updateDiabetesBillingUI();
 }
 
 function updateDiabetesBillingUI(){
   const device=document.getElementById('bill-device');
   if(!device) return;
+  const type=document.getElementById('bill-type')?.value;
+  const drug=document.getElementById('bill-drug')?.value;
+  // 「自己注射薬：インスリンポンプ」を選んだら、機器側も最低限CSIIへ合わせる。
+  if(drug==='insulin-pump' && device.value!=='pump' && device.value!=='sap') device.value='pump';
   const d=device.value;
   const g7=document.getElementById('bill-g7-wrap');
   const route=document.getElementById('bill-g7-route');
@@ -4442,13 +4459,16 @@ function updateDiabetesBillingUI(){
   const smbg=document.getElementById('bill-smbg-wrap');
   const inj=document.getElementById('bill-injection-wrap');
   const costWrap=document.getElementById('bill-c1507-cost-wrap');
+  const pregWrap=document.getElementById('bill-pregnancy-wrap');
+  if(pregWrap) pregWrap.classList.toggle('hidden',type!=='pregnancy');
   g7.classList.toggle('hidden',d!=='g7');
   const highG7=d==='g7' && route && route.value==='c1522';
   const c1507Mode=d==='libre2'||(d==='g7'&&!highG7);
   sensor.classList.toggle('hidden',!(highG7||d==='sap'));
   pump.classList.toggle('hidden',!(d==='pump'||d==='sap'));
-  inj.classList.toggle('hidden',d==='pump'||d==='sap');
-  // C150-7でもSMBG交付回数は入力できるようにし、包括であることを明示する。
+  const noInjection=drug==='none-pregnancy';
+  const pumpDrug=drug==='insulin-pump';
+  inj.classList.toggle('hidden',d==='pump'||d==='sap'||noInjection||pumpDrug);
   smbg.classList.toggle('hidden',d==='none');
   if(costWrap) costWrap.classList.toggle('hidden',!c1507Mode);
   const label=document.getElementById('bill-smbg-label');
@@ -4459,7 +4479,9 @@ function updateDiabetesBillingUI(){
     else label.innerHTML='月間SMBG測定回数 <span class="req">*</span>';
   }
   if(help){
-    if(c1507Mode) help.textContent='実際に交付する回数を入力してください。点数はC150-7の1,250点のままで、C150-1〜6は追加しません。';
+    if(c1507Mode) help.textContent='実際に交付する回数を入力してください。点数はC150-7の1,250点のままで、C150-1〜6は追加しません。2型で90/120回分を交付する場合も、C150-5/6としては算定できません。';
+    else if(type==='t2') help.textContent='2型糖尿病一般は60回区分まで。90回・120回を入力すると「算定不可」と明確に警告します。';
+    else if(type==='pregnancy') help.textContent='所定の妊娠高リスク要件を満たす場合は90回・120回区分も判定できます。';
     else if(d==='pump'||d==='sap'||highG7) help.textContent='C150も別途算定する場合に入力。0回ならC150を合計しません。';
     else help.textContent='20/30/40/60/90/120回以上の区分を判定します。';
   }
@@ -4473,7 +4495,7 @@ function updateDiabetesBillingUI(){
 }
 
 function billingHasInsulin(drug){
-  return drug==='insulin-daily'||drug==='insulin-weekly'||drug==='insulin-combo';
+  return drug==='insulin-daily'||drug==='insulin-weekly'||drug==='insulin-combo'||drug==='insulin-pump';
 }
 function billingSensorPoints(v){
   return v==='2'?1320:(v==='4'?2640:3300);
@@ -4496,18 +4518,29 @@ function billingC1507MaterialEstimate(smbgCount){
   return {cgmCount,sensorCost,stripCost,lancetCost,material,revenue,balance:revenue-material};
 }
 
-function billingSmbg(type,count){
+function billingSmbg(type,count,pregnancyEligible){
   count=Number(count);
-  if(!isFinite(count)||count<20) return {points:0,label:'C150 血糖自己測定器加算：20回未満（加算なし）',warn:count>0?'月20回未満のためC150の回数区分に該当しません。':''};
-  const highEligible=(type==='t1'||type==='pancreatectomy');
+  if(!isFinite(count)||count<20) return {points:0,label:'C150 血糖自己測定器加算：20回未満（加算なし）',warn:count>0?'月20回未満のためC150の回数区分に該当しません。':'',invalid:false};
+
+  if(type==='pregnancy' && pregnancyEligible!=='yes'){
+    return {points:0,label:'C150：算定要件を満たさない／未確認',warn:'【算定不可】妊娠中の糖尿病／妊娠糖尿病では、周産期合併症の危険性が高く、血糖自己測定を必要とする所定要件を満たすことが必要です。要件を確認してください。',invalid:true};
+  }
+  if(type==='t2' && count>=90){
+    return {points:0,label:'C150：90回・120回区分は算定不可',warn:`【算定不可】2型糖尿病一般ではC150-5（90回以上）・C150-6（120回以上）は算定できません。現在 ${Math.round(count)}回/月が選択されています。SMBG回数区分として請求する場合は60回以下へ変更してください。`,invalid:true};
+  }
+
+  const highEligible=(type==='t1'||type==='pancreatectomy'||(type==='pregnancy'&&pregnancyEligible==='yes'));
   let points,label,warn='';
   if(highEligible && count>=120){points=1490;label='C150-6 血糖自己測定器加算（月120回以上）';}
   else if(highEligible && count>=90){points=1170;label='C150-5 血糖自己測定器加算（月90回以上）';}
-  else if(count>=60){points=830;label='C150-4 血糖自己測定器加算（月60回以上）'; if(!highEligible&&count>=90)warn='1型糖尿病・膵全摘後等に該当しないため、90回/120回区分ではなく60回以上（830点）までで判定しています。';}
+  else if(count>=60){
+    points=830;label='C150-4 血糖自己測定器加算（月60回以上）';
+    if(!highEligible&&count>=90) warn='この病型では90回/120回区分の対象要件を満たさないため、60回以上区分までの扱いです。';
+  }
   else if(count>=40){points=580;label='C150-3 血糖自己測定器加算（月40回以上）';}
   else if(count>=30){points=465;label='C150-2 血糖自己測定器加算（月30回以上）';}
   else {points=350;label='C150-1 血糖自己測定器加算（月20回以上）';}
-  return {points,label,warn};
+  return {points,label,warn,invalid:false};
 }
 
 function calculateDiabetesBilling(){
@@ -4515,24 +4548,36 @@ function calculateDiabetesBilling(){
   const drug=document.getElementById('bill-drug').value;
   const device=document.getElementById('bill-device').value;
   const intro=document.getElementById('bill-intro').value;
+  const pregnancyEligible=document.getElementById('bill-pregnancy-eligible')?.value || 'no';
   const hasInsulin=billingHasInsulin(drug);
-  const typeText={t1:'1型糖尿病',t2:'2型糖尿病',pancreatectomy:'膵全摘後／膵性糖尿病',other:'その他の糖尿病'}[type];
-  const drugText={'insulin-daily':'インスリン（1日1回以上）','insulin-weekly':'週1回インスリン（イコデク）',glp1:'GLP-1受容体作動薬',tirzepatide:'GIP/GLP-1受容体作動薬（チルゼパチド）','insulin-combo':'インスリン＋インクレチン注射薬'}[drug];
+  const typeText={t1:'1型糖尿病',t2:'2型糖尿病',pancreatectomy:'膵全摘後／膵性糖尿病',pregnancy:'妊娠中の糖尿病／妊娠糖尿病',other:'その他の糖尿病'}[type];
+  const drugText={'insulin-daily':'インスリン（1日1回以上）','insulin-weekly':'週1回インスリン（イコデク）',glp1:'GLP-1受容体作動薬',tirzepatide:'GIP/GLP-1受容体作動薬（チルゼパチド）','insulin-combo':'インスリン＋インクレチン注射薬','insulin-pump':'インスリンポンプ','none-pregnancy':'自己注射薬なし（妊娠糖尿病でSMBGのみ）'}[drug];
   const rows=[];
   const warnings=[];
   let total=0;
 
-  // C101
-  if(device==='pump'||device==='sap'){
+  // C101 / C101-3
+  if(drug==='none-pregnancy'){
+    if(type!=='pregnancy'){
+      showErr('「自己注射薬なし」は妊娠中の糖尿病／妊娠糖尿病でSMBGのみを行う場合の選択肢です。病型を確認してください。');return;
+    }
+    if(pregnancyEligible==='yes'){
+      rows.push({code:'C101-3-1',name:'在宅妊娠糖尿病患者指導管理料1',points:150,why:'非インスリン・所定の妊娠高リスク要件を満たしSMBGで指導管理'}); total+=150;
+    }else{
+      warnings.push('【算定不可】C101-3は、妊娠中の糖尿病／妊娠糖尿病で周産期合併症リスクが高く、SMBGを必要とする所定要件を満たす患者が対象です。');
+    }
+  }else if(device==='pump'||device==='sap'||drug==='insulin-pump'){
     if(!hasInsulin){showErr('インスリンポンプ／SAPはインスリン治療を前提とします。自己注射薬をインスリンを含む選択肢に変更してください。');return;}
+    if(device!=='pump'&&device!=='sap'){showErr('自己注射薬で「インスリンポンプ」を選択した場合、血糖管理機器・治療法も「インスリンポンプ」または「SAP/AID」を選択してください。');return;}
     rows.push({code:'C101-1',name:'在宅自己注射指導管理料（複雑な場合）',points:1230,why:'間歇注入シリンジポンプを使用'}); total+=1230;
   }else{
     const n=Number(document.getElementById('bill-injections').value);
     if(!isFinite(n)||n<1){showErr('月間自己注射回数を1回以上で入力してください。');return;}
     const p=n<=27?650:750;
     rows.push({code:n<=27?'C101-2イ':'C101-2ロ',name:`在宅自己注射指導管理料（${n<=27?'月27回以下':'月28回以上'}）`,points:p,why:`指示注射回数 ${Math.round(n)}回/月`}); total+=p;
+    if(type==='pregnancy'&&hasInsulin) warnings.push('妊娠中でインスリン自己注射を行っている場合、本ツールではC101在宅自己注射指導管理料を計上し、C101-3を重複計上しません。');
   }
-  if(intro!=='none'){
+  if(intro!=='none' && drug!=='none-pregnancy'){
     rows.push({code:'C101 注2/3',name:'導入初期加算',points:580,why:intro==='initial'?'初回指導から3月以内':'処方内容変更後の対象月'}); total+=580;
   }
 
@@ -4540,14 +4585,16 @@ function calculateDiabetesBilling(){
   const smbgInput=document.getElementById('bill-smbg');
   const smbgCount=smbgInput?Number(smbgInput.value):0;
   if(device==='smbg'){
-    const sm=billingSmbg(type,smbgCount);
+    const sm=billingSmbg(type,smbgCount,pregnancyEligible);
     if(sm.points){rows.push({code:'C150',name:sm.label.replace(/^C150[^ ]* /,''),points:sm.points,why:`SMBG ${Math.round(smbgCount)}回/月`}); total+=sm.points;}
+    else if(sm.invalid){rows.push({code:'C150',name:sm.label,points:0,why:`SMBG ${Math.round(smbgCount)}回/月：算定不可`});}
     if(sm.warn)warnings.push(sm.warn);
     if((drug==='glp1'||drug==='tirzepatide') && sm.points) warnings.push('GLP-1受容体作動薬／チルゼパチドの自己注射では、承認用法・用量に従い週1回以上自己注射している場合、C150はインスリン自己注射患者に準じて算定する取扱いです。');
   }else if(device==='libre2'){
     if(hasInsulin){
       rows.push({code:'C150-7',name:'血糖自己測定器加算（間歇スキャン式持続血糖測定器）',points:1250,why:'FreeStyle Libre 2'});total+=1250;
       warnings.push('C150-7ではLibre 2以外の通常SMBGに係る費用も所定点数に含まれ、C150-1〜6は別に算定しません。');
+      if(type==='t2'&&isFinite(smbgCount)&&smbgCount>=90) warnings.push('【算定注意】2型糖尿病一般ではC150-5/6（90回・120回）は算定できません。C150-7ではSMBGは包括されるため別算定はしません。SMBG回数区分として請求する場合は60回以下へ変更してください。');
       if(isFinite(smbgCount)&&smbgCount>0){
         warnings.push(`SMBG ${Math.round(smbgCount)}回分を交付・併用しても、C150-7は1,250点のままです。1型糖尿病で120回分を交付してもC150-6（1,490点）を追加したり、採算を理由にC150-6へ置き換えたりする前提では判定しません。`);
       }
@@ -4558,6 +4605,7 @@ function calculateDiabetesBilling(){
       if(hasInsulin){
         rows.push({code:'C150-7',name:'血糖自己測定器加算（間歇スキャン式持続血糖測定器）',points:1250,why:'Dexcom G7をC150-7で算定'});total+=1250;
         warnings.push('G7をC150-7で算定する場合、通常SMBG分はC150-7に含まれ、C150-1〜6を別に算定しません。');
+        if(type==='t2'&&isFinite(smbgCount)&&smbgCount>=90) warnings.push('【算定注意】2型糖尿病一般ではC150-5/6（90回・120回）は算定できません。G7をC150-7で算定する場合はSMBGは包括されます。SMBG回数区分として請求する場合は60回以下へ変更してください。');
         if(isFinite(smbgCount)&&smbgCount>0){
           warnings.push(`SMBG ${Math.round(smbgCount)}回分を交付・併用しても、C150-7は1,250点のままです。SMBG高頻度区分へ採算上の理由で切り替える前提では判定しません。`);
         }
@@ -4569,14 +4617,14 @@ function calculateDiabetesBilling(){
       rows.push({code:'C152-2（非連動）',name:`持続血糖測定器加算（${band}）`,points:sp,why:'Dexcom G7・C152-2ルート'}); total+=sp;
       warnings.push('G7のC152-2ルートは「高い方を選べる」という意味ではなく、届出済み施設基準と患者要件を実際に満たす場合に限ります。');
       if(type==='t2') warnings.push('2型糖尿病でポンプ非連動C152-2を算定する場合は、該当患者要件の確認に加え、直近の空腹時血清Cペプチド測定結果をレセプトに記載する取扱いです。');
-      if(isFinite(smbgCount)&&smbgCount>0){const sm=billingSmbg(type,smbgCount);if(sm.points){rows.push({code:'C150',name:sm.label.replace(/^C150[^ ]* /,''),points:sm.points,why:`別途SMBG ${Math.round(smbgCount)}回/月`});total+=sm.points;}if(sm.warn)warnings.push(sm.warn);}
+      if(isFinite(smbgCount)&&smbgCount>0){const sm=billingSmbg(type,smbgCount,pregnancyEligible);if(sm.points){rows.push({code:'C150',name:sm.label.replace(/^C150[^ ]* /,''),points:sm.points,why:`別途SMBG ${Math.round(smbgCount)}回/月`});total+=sm.points;}else if(sm.invalid){rows.push({code:'C150',name:sm.label,points:0,why:`SMBG ${Math.round(smbgCount)}回/月：算定不可`});}if(sm.warn)warnings.push(sm.warn);}
     }
   }else if(device==='pump'){
     if(!hasInsulin){showErr('インスリンポンプはインスリン治療を前提とします。');return;}
     const pt=document.getElementById('bill-pump-type').value;
     const pp=pt==='program'?2500:1500;
     rows.push({code:'C152',name:`間歇注入シリンジポンプ加算（${pt==='program'?'プログラム付き':'その他'}）`,points:pp,why:'CSII'});total+=pp;
-    if(isFinite(smbgCount)&&smbgCount>0){const sm=billingSmbg(type,smbgCount);if(sm.points){rows.push({code:'C150',name:sm.label.replace(/^C150[^ ]* /,''),points:sm.points,why:`SMBG ${Math.round(smbgCount)}回/月`});total+=sm.points;}if(sm.warn)warnings.push(sm.warn);}
+    if(isFinite(smbgCount)&&smbgCount>0){const sm=billingSmbg(type,smbgCount,pregnancyEligible);if(sm.points){rows.push({code:'C150',name:sm.label.replace(/^C150[^ ]* /,''),points:sm.points,why:`SMBG ${Math.round(smbgCount)}回/月`});total+=sm.points;}else if(sm.invalid){rows.push({code:'C150',name:sm.label,points:0,why:`SMBG ${Math.round(smbgCount)}回/月：算定不可`});}if(sm.warn)warnings.push(sm.warn);}
   }else if(device==='sap'){
     if(!hasInsulin){showErr('SAP/AIDはインスリン治療を前提とします。');return;}
     const pt=document.getElementById('bill-pump-type').value;
@@ -4587,7 +4635,7 @@ function calculateDiabetesBilling(){
     rows.push({code:'C152-2 注2',name:`ポンプ＋トランスミッター加算（${pt==='program'?'プログラム付き':'その他'}）`,points:tp,why:'SAP/AID'});total+=tp;
     warnings.push('SAP/AIDでC152-2のポンプ＋トランスミッター加算を算定する場合、C152（間歇注入シリンジポンプ加算）は重ねて算定しません。');
     warnings.push('C152-2は施設基準の届出と患者要件を満たすことが必要です。');
-    if(isFinite(smbgCount)&&smbgCount>0){const sm=billingSmbg(type,smbgCount);if(sm.points){rows.push({code:'C150',name:sm.label.replace(/^C150[^ ]* /,''),points:sm.points,why:`別途SMBG ${Math.round(smbgCount)}回/月`});total+=sm.points;}if(sm.warn)warnings.push(sm.warn);}
+    if(isFinite(smbgCount)&&smbgCount>0){const sm=billingSmbg(type,smbgCount,pregnancyEligible);if(sm.points){rows.push({code:'C150',name:sm.label.replace(/^C150[^ ]* /,''),points:sm.points,why:`別途SMBG ${Math.round(smbgCount)}回/月`});total+=sm.points;}else if(sm.invalid){rows.push({code:'C150',name:sm.label,points:0,why:`SMBG ${Math.round(smbgCount)}回/月：算定不可`});}if(sm.warn)warnings.push(sm.warn);}
   }
 
   const c1507ModeForCost=(device==='libre2')||(device==='g7'&&document.getElementById('bill-g7-route')&&document.getElementById('bill-g7-route').value==='c1507');
@@ -4602,6 +4650,10 @@ function calculateDiabetesBilling(){
     }
   }
 
+  if(type==='pregnancy'){
+    if(pregnancyEligible==='yes') warnings.push('妊娠中の糖尿病／妊娠糖尿病：C150の90回・120回区分は、周産期合併症の危険性が高くSMBGを必要とする所定患者であれば対象になります。');
+    else warnings.push('妊娠中の糖尿病／妊娠糖尿病：所定の高リスク要件が「満たさない／不明」のため、C150および非インスリン時のC101-3は算定対象としていません。');
+  }
   if(drug==='insulin-weekly') warnings.push('インスリン イコデクは、承認用法・用量に従い週1回自己注射している場合、C150では「インスリン製剤を1日1回以上自己注射」に準じて扱われます。');
   if(type==='other') warnings.push('「その他の糖尿病」は病態によりC150の高頻度区分やC152-2の患者要件が異なるため、実際の病名・要件を確認してください。');
   warnings.push('この合計は選択したC101/C150/C152/C152-2のみです。診察料、薬剤料、検査料、C151/C153等は含みません。');
@@ -4618,7 +4670,7 @@ function calculateDiabetesBilling(){
   const html=`<strong>${typeText}／${drugText}</strong><br>選択条件から算定候補を整理しました。${table}<br><strong>注意事項</strong><br>${warnings.map(x=>'・'+x).join('<br>')}`;
   const sections=[{title:'算定候補（令和8年度）',results:resultRows}];
   if(materialRows.length) sections.push({title:'C150-7 材料費の参考試算',results:materialRows});
-  renderResult({sections,interpretation:{cls:warnings.some(x=>x.includes('要件')||x.includes('対象としていません')||x.includes('包括'))?'brd':'ok',html}});
+  renderResult({sections,interpretation:{cls:warnings.some(x=>x.includes('【算定不可】'))?'hi':(warnings.some(x=>x.includes('要件')||x.includes('対象としていません')||x.includes('包括')||x.includes('【算定注意】'))?'brd':'ok'),html}});
 }
 
 function renderForm(id){
