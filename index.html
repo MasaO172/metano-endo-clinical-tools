@@ -207,7 +207,7 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
 <header>
   <div class="badge">🩺 臨床計算ツール集</div>
   <h1>代謝・内分泌 臨床計算・診療支援ツール</h1>
-  <p class="subtitle">HOMA2（Oxford DTU検証データに基づく近似）を含む全57項目に対応</p>
+  <p class="subtitle">HOMA2（Oxford DTU検証データに基づく近似）を含む全58項目に対応</p>
 </header>
 
 <div class="copyright-box">
@@ -257,6 +257,7 @@ input[type=number]:focus,input.lab-number:focus{border-color:var(--accent);}
 <div class="notice">
   <strong>ご利用にあたって</strong><br>
   本ツールの計算結果は参考値です。診断・治療方針の決定は必ず医師の判断に基づいて行ってください。<br><br>
+  <strong>保険算定支援：</strong>糖尿病の在宅自己注射・SMBG/CGM・ポンプ算定は令和8年度（2026年）の診療報酬に基づく参考表示です。実際の算定は最新の告示・留意事項・疑義解釈、患者要件、施設基準、審査運用を必ず確認してください。<br><br>
   <strong>ホルモン負荷試験：</strong>日本内分泌学会の診療ガイドライン等を基にした参考判定です。測定法・施設基準・薬剤影響・患者背景により解釈が変わるため、実施・最終判定は内分泌専門医の管理下で行ってください。高張食塩水負荷、水制限試験、バソプレシン負荷などは医療機関で厳重な監視下に行う検査です。副腎皮質機能低下のステロイドカバーは添付資料の身体的ストレス分類を参考表示するもので、個々の患者背景・循環動態・施設プロトコルを優先してください。SIADH判定は日本内分泌学会2023年版の診断基準に沿った診断補助であり、副腎・甲状腺の数値判定は測定法・採血時刻・施設基準を踏まえたスクリーニングです。低Na血症・高Na血症・高Ca血症・低K血症・高K血症および貧血の鑑別も診断補助であり、緊急度、薬剤、輸液、腎機能、出血・溶血所見、臨床所見を優先してください。Na異常では発症速度と神経症状を、貧血では循環動態・活動性出血・他系統血球減少を必ず別途評価してください。<br><br>
   HOMA2はOxford大学 DTU <strong>HOMA2 v2.2.4の検証データ</strong>（441点×3モード）を用いた<strong>非公式の近似実装</strong>です。格子点間は双三次補間（4x4近傍のCatmull-Romスプライン、オーバーシュート防止のクランプ付き）で算出するため、検証グリッド点以外ではOxford公式Calculatorと完全一致する保証はありません（通常は1%未満、条件により数%の差が生じ得ます）。研究・診療で厳密な値が必要な場合はOxford公式Calculatorを優先してください。<br>
   参考: Levy JC et al., Diabetes Care 1998;21:2191-92　
@@ -4200,7 +4201,8 @@ const CATEGORY_CONFIG = [
     ['ga-hba1c','GAのHbA1c換算']
   ]},
   {id:'insulin', label:'インスリン治療・ポンプ', items:[
-    ['pump-settings','インスリンポンプ初期設定（TDD・基礎・ICR・ISF）']
+    ['pump-settings','インスリンポンプ初期設定（TDD・基礎・ICR・ISF）'],
+    ['diabetes-home-billing','糖尿病：在宅自己注射・SMBG/CGM・ポンプの保険算定']
   ]},
   {id:'endocrine', label:'内分泌・ホルモン負荷試験・診断', items:[
     ['siadh','SIADH診断基準（2023年版）'],
@@ -4318,6 +4320,223 @@ function initCategorySelector(initialCalc){
   renderCategoryItems(cat);
 }
 
+// ============================================================
+// 糖尿病：在宅自己注射・SMBG/CGM・ポンプの保険算定（令和8年度）
+// ============================================================
+function renderDiabetesBillingForm(){
+  const area=document.getElementById('input-area');
+  document.getElementById('calc-desc').textContent='令和8年度（2026年）の診療報酬を基に、C101 在宅自己注射指導管理料、C150 血糖自己測定器加算、C152 間歇注入シリンジポンプ加算、C152-2 持続血糖測定器加算を組み合わせて参考算定します。G7はC150-7（1,250点）と、施設基準・患者要件を満たすC152-2の両方に対応します。最終的な算定可否は施設基準・患者要件・最新通知を確認してください。';
+  area.innerHTML=`
+    <div class="fields">
+      <div class="field"><label>糖尿病の病型 <span class="req">*</span></label>
+        <select id="bill-type" onchange="updateDiabetesBillingUI()" style="width:100%;padding:.62rem .8rem;font-size:.92rem;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;">
+          <option value="t1">1型糖尿病</option>
+          <option value="t2" selected>2型糖尿病</option>
+          <option value="pancreatectomy">膵全摘後／膵性糖尿病（インスリン欠乏）</option>
+          <option value="other">その他の糖尿病</option>
+        </select>
+      </div>
+      <div class="field"><label>自己注射薬 <span class="req">*</span></label>
+        <select id="bill-drug" onchange="updateDiabetesBillingUI()" style="width:100%;padding:.62rem .8rem;font-size:.92rem;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;">
+          <option value="insulin-daily">インスリン（1日1回以上）</option>
+          <option value="insulin-weekly">週1回インスリン（インスリン イコデク）</option>
+          <option value="glp1">GLP-1受容体作動薬</option>
+          <option value="tirzepatide">GIP/GLP-1受容体作動薬（チルゼパチド）</option>
+          <option value="insulin-combo">インスリン ＋ GLP-1/GIP-GLP-1（併用・配合を含む）</option>
+        </select>
+      </div>
+      <div class="field" id="bill-injection-wrap"><label>医師が指示した月間自己注射回数 <span class="req">*</span></label>
+        <div class="inp-w"><input type="number" id="bill-injections" inputmode="numeric" min="1" step="1" value="30"><span class="unit-lbl">回/月</span></div>
+        <div class="limit-hint">C101の「月27回以下／28回以上」の判定に用います。週1回製剤では通常4〜5回/月が目安ですが、実際の指示回数を入力してください。</div>
+      </div>
+      <div class="field"><label>血糖管理機器・治療法 <span class="req">*</span></label>
+        <select id="bill-device" onchange="updateDiabetesBillingUI()" style="width:100%;padding:.62rem .8rem;font-size:.92rem;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;">
+          <option value="smbg">SMBG（血糖自己測定）のみ</option>
+          <option value="libre2">FreeStyle Libre 2（C150-7）</option>
+          <option value="g7">Dexcom G7</option>
+          <option value="pump">インスリンポンプ（CSII、CGM非連動）</option>
+          <option value="sap">SAP/AID（ポンプ＋連動CGM）</option>
+          <option value="none">血糖測定器・ポンプ加算なし</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="bill-g7-wrap" class="fields hidden">
+      <div class="field"><label>G7の算定区分 <span class="req">*</span></label>
+        <select id="bill-g7-route" onchange="updateDiabetesBillingUI()" style="width:100%;padding:.62rem .8rem;font-size:.92rem;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;">
+          <option value="c1507">C150-7：1,250点（一般のCGM/isCGM区分）</option>
+          <option value="c1522">C152-2：施設基準・患者要件を満たす（高い方）</option>
+        </select>
+      </div>
+      <div class="field" id="bill-g7-note"><label>施設での運用</label>
+        <div class="range-info" style="margin:0;">C152-2を選ぶ場合は、届出済み施設基準に加え、病型ごとの患者要件を満たすことが前提です。</div>
+      </div>
+    </div>
+
+    <div id="bill-sensor-wrap" class="fields hidden">
+      <div class="field"><label>C152-2 センサー個数 <span class="req">*</span></label>
+        <select id="bill-sensors" style="width:100%;padding:.62rem .8rem;font-size:.92rem;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;">
+          <option value="2">2個以下：1,320点</option>
+          <option value="4" selected>3個または4個：2,640点</option>
+          <option value="5">5個以上：3,300点</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="bill-pump-wrap" class="fields hidden">
+      <div class="field"><label>ポンプの種類 <span class="req">*</span></label>
+        <select id="bill-pump-type" style="width:100%;padding:.62rem .8rem;font-size:.92rem;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;">
+          <option value="program">プログラム付きシリンジポンプ</option>
+          <option value="other">その他のシリンジポンプ</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="bill-smbg-wrap" class="fields">
+      <div class="field"><label id="bill-smbg-label">月間SMBG測定回数 <span class="req">*</span></label>
+        <div class="inp-w"><input type="number" id="bill-smbg" inputmode="numeric" min="0" step="1" value="60"><span class="unit-lbl">回/月</span></div>
+        <div class="limit-hint" id="bill-smbg-help">20/30/40/60/90/120回以上の区分を判定します。</div>
+      </div>
+    </div>
+
+    <div class="fields">
+      <div class="field"><label>C101 導入初期加算</label>
+        <select id="bill-intro" style="width:100%;padding:.62rem .8rem;font-size:.92rem;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;">
+          <option value="none">なし</option>
+          <option value="initial">初回指導から3月以内：+580点</option>
+          <option value="change">処方内容変更後の対象月：+580点</option>
+        </select>
+      </div>
+    </div>
+    <div class="limit-guide"><strong>この画面で扱う主な項目：</strong>C101、C150、C152、C152-2。注入器加算（C151）、注入器用注射針加算（C153）、薬剤料・診察料・検査料などは合計に含めません。材料加算は令和8年度から3月に3回までの運用があり、実際の請求月・まとめ算定はレセプト運用を確認してください。</div>`;
+  updateDiabetesBillingUI();
+}
+
+function updateDiabetesBillingUI(){
+  const device=document.getElementById('bill-device');
+  if(!device) return;
+  const d=device.value;
+  const g7=document.getElementById('bill-g7-wrap');
+  const route=document.getElementById('bill-g7-route');
+  const sensor=document.getElementById('bill-sensor-wrap');
+  const pump=document.getElementById('bill-pump-wrap');
+  const smbg=document.getElementById('bill-smbg-wrap');
+  const inj=document.getElementById('bill-injection-wrap');
+  g7.classList.toggle('hidden',d!=='g7');
+  const highG7=d==='g7' && route && route.value==='c1522';
+  sensor.classList.toggle('hidden',!(highG7||d==='sap'));
+  pump.classList.toggle('hidden',!(d==='pump'||d==='sap'));
+  inj.classList.toggle('hidden',d==='pump'||d==='sap');
+  // C150-7 includes ordinary SMBG costs; C152-2/CSII/SAP may have a separately billable C150 route.
+  smbg.classList.toggle('hidden',d==='libre2'||(d==='g7'&&!highG7)||d==='none');
+  const label=document.getElementById('bill-smbg-label');
+  const help=document.getElementById('bill-smbg-help');
+  if(label){ label.innerHTML=(d==='pump'||d==='sap'||highG7) ? '別途算定するSMBG回数（任意）' : '月間SMBG測定回数 <span class="req">*</span>'; }
+  if(help){ help.textContent=(d==='pump'||d==='sap'||highG7) ? 'C150も別途算定する場合に入力。0回ならC150を合計しません。' : '20/30/40/60/90/120回以上の区分を判定します。'; }
+}
+
+function billingHasInsulin(drug){
+  return drug==='insulin-daily'||drug==='insulin-weekly'||drug==='insulin-combo';
+}
+function billingSensorPoints(v){
+  return v==='2'?1320:(v==='4'?2640:3300);
+}
+function billingSmbg(type,count){
+  count=Number(count);
+  if(!isFinite(count)||count<20) return {points:0,label:'C150 血糖自己測定器加算：20回未満（加算なし）',warn:count>0?'月20回未満のためC150の回数区分に該当しません。':''};
+  const highEligible=(type==='t1'||type==='pancreatectomy');
+  let points,label,warn='';
+  if(highEligible && count>=120){points=1490;label='C150-6 血糖自己測定器加算（月120回以上）';}
+  else if(highEligible && count>=90){points=1170;label='C150-5 血糖自己測定器加算（月90回以上）';}
+  else if(count>=60){points=830;label='C150-4 血糖自己測定器加算（月60回以上）'; if(!highEligible&&count>=90)warn='1型糖尿病・膵全摘後等に該当しないため、90回/120回区分ではなく60回以上（830点）までで判定しています。';}
+  else if(count>=40){points=580;label='C150-3 血糖自己測定器加算（月40回以上）';}
+  else if(count>=30){points=465;label='C150-2 血糖自己測定器加算（月30回以上）';}
+  else {points=350;label='C150-1 血糖自己測定器加算（月20回以上）';}
+  return {points,label,warn};
+}
+
+function calculateDiabetesBilling(){
+  const type=document.getElementById('bill-type').value;
+  const drug=document.getElementById('bill-drug').value;
+  const device=document.getElementById('bill-device').value;
+  const intro=document.getElementById('bill-intro').value;
+  const hasInsulin=billingHasInsulin(drug);
+  const typeText={t1:'1型糖尿病',t2:'2型糖尿病',pancreatectomy:'膵全摘後／膵性糖尿病',other:'その他の糖尿病'}[type];
+  const drugText={'insulin-daily':'インスリン（1日1回以上）','insulin-weekly':'週1回インスリン（イコデク）',glp1:'GLP-1受容体作動薬',tirzepatide:'GIP/GLP-1受容体作動薬（チルゼパチド）','insulin-combo':'インスリン＋インクレチン注射薬'}[drug];
+  const rows=[];
+  const warnings=[];
+  let total=0;
+
+  // C101
+  if(device==='pump'||device==='sap'){
+    if(!hasInsulin){showErr('インスリンポンプ／SAPはインスリン治療を前提とします。自己注射薬をインスリンを含む選択肢に変更してください。');return;}
+    rows.push({code:'C101-1',name:'在宅自己注射指導管理料（複雑な場合）',points:1230,why:'間歇注入シリンジポンプを使用'}); total+=1230;
+  }else{
+    const n=Number(document.getElementById('bill-injections').value);
+    if(!isFinite(n)||n<1){showErr('月間自己注射回数を1回以上で入力してください。');return;}
+    const p=n<=27?650:750;
+    rows.push({code:n<=27?'C101-2イ':'C101-2ロ',name:`在宅自己注射指導管理料（${n<=27?'月27回以下':'月28回以上'}）`,points:p,why:`指示注射回数 ${Math.round(n)}回/月`}); total+=p;
+  }
+  if(intro!=='none'){
+    rows.push({code:'C101 注2/3',name:'導入初期加算',points:580,why:intro==='initial'?'初回指導から3月以内':'処方内容変更後の対象月'}); total+=580;
+  }
+
+  // Device / glucose monitoring
+  const smbgInput=document.getElementById('bill-smbg');
+  const smbgCount=smbgInput?Number(smbgInput.value):0;
+  if(device==='smbg'){
+    const sm=billingSmbg(type,smbgCount);
+    if(sm.points){rows.push({code:'C150',name:sm.label.replace(/^C150[^ ]* /,''),points:sm.points,why:`SMBG ${Math.round(smbgCount)}回/月`}); total+=sm.points;}
+    if(sm.warn)warnings.push(sm.warn);
+    if((drug==='glp1'||drug==='tirzepatide') && sm.points) warnings.push('GLP-1受容体作動薬／チルゼパチドの自己注射では、承認用法・用量に従い週1回以上自己注射している場合、C150はインスリン自己注射患者に準じて算定する取扱いです。');
+  }else if(device==='libre2'){
+    if(hasInsulin){rows.push({code:'C150-7',name:'血糖自己測定器加算（間歇スキャン式持続血糖測定器）',points:1250,why:'FreeStyle Libre 2'});total+=1250;warnings.push('C150-7ではLibre 2以外の通常SMBGに係る費用も所定点数に含まれ、別にC150の回数区分は加えません。');}
+    else warnings.push('Libre 2のC150-7（1,250点）はインスリン自己注射（イコデク週1回を含む）を前提とするため、GLP-1/GIP-GLP-1単独ではこの区分を算定対象としていません。SMBGのC150回数区分を別途確認してください。');
+  }else if(device==='g7'){
+    const route=document.getElementById('bill-g7-route').value;
+    if(route==='c1507'){
+      if(hasInsulin){rows.push({code:'C150-7',name:'血糖自己測定器加算（間歇スキャン式持続血糖測定器）',points:1250,why:'Dexcom G7をC150-7で算定'});total+=1250;warnings.push('G7をC150-7で算定する場合、通常SMBG分は別のC150回数区分として重ねて加算しません。');}
+      else warnings.push('G7のC150-7（1,250点）はインスリン自己注射（イコデク週1回を含む）を前提とするため、GLP-1/GIP-GLP-1単独ではこの区分を算定対象としていません。');
+    }else{
+      if(!hasInsulin){showErr('G7をC152-2で算定する経路はインスリン治療を前提とする患者要件です。自己注射薬をインスリンを含む選択肢に変更してください。');return;}
+      const sv=document.getElementById('bill-sensors').value, sp=billingSensorPoints(sv);
+      const band=sv==='2'?'2個以下':(sv==='4'?'3個または4個':'5個以上');
+      rows.push({code:'C152-2（非連動）',name:`持続血糖測定器加算（${band}）`,points:sp,why:'Dexcom G7・C152-2ルート'}); total+=sp;
+      warnings.push('G7のC152-2ルートは「高い方を選べる」という意味ではなく、届出済み施設基準と患者要件を実際に満たす場合に限ります。');
+      if(type==='t2') warnings.push('2型糖尿病でポンプ非連動C152-2を算定する場合は、該当患者要件の確認に加え、直近の空腹時血清Cペプチド測定結果をレセプトに記載する取扱いです。');
+      if(isFinite(smbgCount)&&smbgCount>0){const sm=billingSmbg(type,smbgCount);if(sm.points){rows.push({code:'C150',name:sm.label.replace(/^C150[^ ]* /,''),points:sm.points,why:`別途SMBG ${Math.round(smbgCount)}回/月`});total+=sm.points;}if(sm.warn)warnings.push(sm.warn);}
+    }
+  }else if(device==='pump'){
+    if(!hasInsulin){showErr('インスリンポンプはインスリン治療を前提とします。');return;}
+    const pt=document.getElementById('bill-pump-type').value;
+    const pp=pt==='program'?2500:1500;
+    rows.push({code:'C152',name:`間歇注入シリンジポンプ加算（${pt==='program'?'プログラム付き':'その他'}）`,points:pp,why:'CSII'});total+=pp;
+    if(isFinite(smbgCount)&&smbgCount>0){const sm=billingSmbg(type,smbgCount);if(sm.points){rows.push({code:'C150',name:sm.label.replace(/^C150[^ ]* /,''),points:sm.points,why:`SMBG ${Math.round(smbgCount)}回/月`});total+=sm.points;}if(sm.warn)warnings.push(sm.warn);}
+  }else if(device==='sap'){
+    if(!hasInsulin){showErr('SAP/AIDはインスリン治療を前提とします。');return;}
+    const pt=document.getElementById('bill-pump-type').value;
+    const sv=document.getElementById('bill-sensors').value, sp=billingSensorPoints(sv);
+    const band=sv==='2'?'2個以下':(sv==='4'?'3個または4個':'5個以上');
+    rows.push({code:'C152-2（連動）',name:`持続血糖測定器加算（センサー ${band}）`,points:sp,why:'SAP/AID'});total+=sp;
+    const tp=pt==='program'?3230:2230;
+    rows.push({code:'C152-2 注2',name:`ポンプ＋トランスミッター加算（${pt==='program'?'プログラム付き':'その他'}）`,points:tp,why:'SAP/AID'});total+=tp;
+    warnings.push('SAP/AIDでC152-2のポンプ＋トランスミッター加算を算定する場合、C152（間歇注入シリンジポンプ加算）は重ねて算定しません。');
+    warnings.push('C152-2は施設基準の届出と患者要件を満たすことが必要です。');
+    if(isFinite(smbgCount)&&smbgCount>0){const sm=billingSmbg(type,smbgCount);if(sm.points){rows.push({code:'C150',name:sm.label.replace(/^C150[^ ]* /,''),points:sm.points,why:`別途SMBG ${Math.round(smbgCount)}回/月`});total+=sm.points;}if(sm.warn)warnings.push(sm.warn);}
+  }
+
+  if(drug==='insulin-weekly') warnings.push('インスリン イコデクは、承認用法・用量に従い週1回自己注射している場合、C150では「インスリン製剤を1日1回以上自己注射」に準じて扱われます。');
+  if(type==='other') warnings.push('「その他の糖尿病」は病態によりC150の高頻度区分やC152-2の患者要件が異なるため、実際の病名・要件を確認してください。');
+  warnings.push('この合計は選択したC101/C150/C152/C152-2のみです。診察料、薬剤料、検査料、C151/C153等は含みません。');
+  warnings.push('令和8年度（2026年）の点数・留意事項に基づく参考判定です。改定・疑義解釈・審査運用、施設届出を優先してください。');
+
+  const resultRows=rows.map(r=>({label:r.code,text:`${r.name}<br><span style="font-size:.74rem;color:var(--sub)">${r.why}</span>`,unit:`${r.points.toLocaleString()} 点`,wide:true}));
+  resultRows.push({label:'対象項目合計',text:`${total.toLocaleString()} 点`,unit:'',wide:true});
+  const table=rows.length?`<div style="overflow-x:auto;margin-top:.8rem"><table style="width:100%;border-collapse:collapse;font-size:.78rem"><thead><tr><th style="text-align:left;padding:.45rem;border-bottom:1px solid var(--border)">区分</th><th style="text-align:left;padding:.45rem;border-bottom:1px solid var(--border)">項目</th><th style="text-align:right;padding:.45rem;border-bottom:1px solid var(--border)">点数</th></tr></thead><tbody>${rows.map(r=>`<tr><td style="padding:.45rem;border-bottom:1px solid var(--border)">${r.code}</td><td style="padding:.45rem;border-bottom:1px solid var(--border)">${r.name}</td><td style="padding:.45rem;border-bottom:1px solid var(--border);text-align:right;font-weight:700">${r.points.toLocaleString()}</td></tr>`).join('')}</tbody></table></div>`:'';
+  const html=`<strong>${typeText}／${drugText}</strong><br>選択条件から算定候補を整理しました。${table}<br><strong>注意事項</strong><br>${warnings.map(x=>'・'+x).join('<br>')}`;
+  renderResult({sections:[{title:'算定候補（令和8年度）',results:resultRows}],interpretation:{cls:warnings.some(x=>x.includes('要件')||x.includes('対象としていません'))?'brd':'ok',html}});
+}
+
 function renderForm(id){
   currentCalc = id;
   document.getElementById('res-card').classList.add('hidden');
@@ -4328,6 +4547,10 @@ function renderForm(id){
     document.getElementById('calc-desc').textContent = 'Oxford大学 DTU HOMA2 v2.2.4 検証データに基づく双三次補間計算です。インスリン抵抗性・β細胞機能を評価します。';
     area.innerHTML = HOMA2_FORM_HTML;
     initHoma2Form();
+    return;
+  }
+  if(id==='diabetes-home-billing'){
+    renderDiabetesBillingForm();
     return;
   }
 
@@ -4402,6 +4625,7 @@ function renderResult(out){
 
 function runCalc(){
   if(currentCalc==='homa2'){ calculateHoma2(); return; }
+  if(currentCalc==='diabetes-home-billing'){ calculateDiabetesBilling(); return; }
   const c = CALCS.find(x=>x.id===currentCalc);
   currentInputMeta = [];
   const v = c.inputs.map((inp,i)=>{

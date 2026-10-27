@@ -1,4 +1,4 @@
-var CACHE_NAME = 'metano-endo-clinical-tools-v12-20261012-adrenal-stress-cover';
+var CACHE_NAME = 'metano-endo-clinical-tools-v13-20261027-diabetes-billing';
 var CORE_ASSETS = [
   './',
   './index.html',
