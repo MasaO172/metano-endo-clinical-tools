@@ -1,4 +1,4 @@
-var CACHE_NAME = 'metano-endo-clinical-tools-v13-20261027-diabetes-billing';
+var CACHE_NAME = 'metano-endo-clinical-tools-v14-20261027-c1507-smbg-inclusive';
 var CORE_ASSETS = [
   './',
   './index.html',

@@ -4325,7 +4325,7 @@ function initCategorySelector(initialCalc){
 // ============================================================
 function renderDiabetesBillingForm(){
   const area=document.getElementById('input-area');
-  document.getElementById('calc-desc').textContent='令和8年度（2026年）の診療報酬を基に、C101 在宅自己注射指導管理料、C150 血糖自己測定器加算、C152 間歇注入シリンジポンプ加算、C152-2 持続血糖測定器加算を組み合わせて参考算定します。G7はC150-7（1,250点）と、施設基準・患者要件を満たすC152-2の両方に対応します。最終的な算定可否は施設基準・患者要件・最新通知を確認してください。';
+  document.getElementById('calc-desc').textContent='令和8年度（2026年）の診療報酬を基に、C101 在宅自己注射指導管理料、C150 血糖自己測定器加算、C152 間歇注入シリンジポンプ加算、C152-2 持続血糖測定器加算を組み合わせて参考算定します。Libre 2／G7をC150-7で算定する場合、併用する通常SMBGはC150-7に包括され、SMBG回数区分へ切り替えたり重ねて算定したりしない扱いを明示します。G7はC150-7（1,250点）と、施設基準・患者要件を満たすC152-2の両方に対応します。最終的な算定可否は施設基準・患者要件・最新通知を確認してください。';
   area.innerHTML=`
     <div class="fields">
       <div class="field"><label>糖尿病の病型 <span class="req">*</span></label>
@@ -4399,6 +4399,25 @@ function renderDiabetesBillingForm(){
       </div>
     </div>
 
+    <div id="bill-c1507-cost-wrap" class="hidden">
+      <div class="limit-guide" style="margin:.15rem 0 .85rem;"><strong>C150-7でLibre 2／G7を算定する場合：</strong>SMBGを併用して物品を交付しても、そのSMBGはC150-7の所定点数に含まれます。1型糖尿病で120回分を交付してもC150-6（120回以上）を追加したり、採算を理由にC150-6へ置き換えたりする前提では判定しません。</div>
+      <div class="fields">
+        <div class="field"><label>CGMセンサー交付個数（材料費試算・任意）</label>
+          <div class="inp-w"><input type="number" id="bill-cgm-count" inputmode="numeric" min="0" step="1" value="2"><span class="unit-lbl">個</span></div>
+        </div>
+        <div class="field"><label>センサー1個の院内実購入額（任意）</label>
+          <div class="inp-w"><input type="number" id="bill-cgm-unit-cost" inputmode="decimal" min="0" step="1" placeholder="例 6000"><span class="unit-lbl">円</span></div>
+        </div>
+        <div class="field"><label>SMBG試験紙1枚の院内実購入額（任意）</label>
+          <div class="inp-w"><input type="number" id="bill-strip-cost" inputmode="decimal" min="0" step="1" placeholder="例 70"><span class="unit-lbl">円</span></div>
+        </div>
+        <div class="field"><label>穿刺針1本の院内実購入額（任意）</label>
+          <div class="inp-w"><input type="number" id="bill-lancet-cost" inputmode="decimal" min="0" step="1" placeholder="例 15"><span class="unit-lbl">円</span></div>
+        </div>
+      </div>
+      <div class="limit-hint">購入額を入力した場合のみ、C150-7（1,250点＝12,500円相当）と材料費の単純差額を参考表示します。C101、薬剤料、診察料、人件費、物流費、消費税等は含めません。</div>
+    </div>
+
     <div class="fields">
       <div class="field"><label>C101 導入初期加算</label>
         <select id="bill-intro" style="width:100%;padding:.62rem .8rem;font-size:.92rem;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;">
@@ -4408,7 +4427,7 @@ function renderDiabetesBillingForm(){
         </select>
       </div>
     </div>
-    <div class="limit-guide"><strong>この画面で扱う主な項目：</strong>C101、C150、C152、C152-2。注入器加算（C151）、注入器用注射針加算（C153）、薬剤料・診察料・検査料などは合計に含めません。材料加算は令和8年度から3月に3回までの運用があり、実際の請求月・まとめ算定はレセプト運用を確認してください。</div>`;
+    <div class="limit-guide"><strong>この画面で扱う主な項目：</strong>C101、C150、C152、C152-2。注入器加算（C151）、注入器用注射針加算（C153）、薬剤料・診察料・検査料などは合計に含めません。<br><strong>重要：</strong>C150-7（Libre 2／G7）を算定する場合、通常SMBGは所定点数に含まれ、別にC150-1〜6を算定しません。算定区分は医療機関の採算ではなく、実際に使用した機器・患者要件・施設基準に基づいて選択してください。材料加算は令和8年度から3月に3回までの運用があり、実際の請求月・まとめ算定はレセプト運用を確認してください。</div>`;
   updateDiabetesBillingUI();
 }
 
@@ -4422,17 +4441,35 @@ function updateDiabetesBillingUI(){
   const pump=document.getElementById('bill-pump-wrap');
   const smbg=document.getElementById('bill-smbg-wrap');
   const inj=document.getElementById('bill-injection-wrap');
+  const costWrap=document.getElementById('bill-c1507-cost-wrap');
   g7.classList.toggle('hidden',d!=='g7');
   const highG7=d==='g7' && route && route.value==='c1522';
+  const c1507Mode=d==='libre2'||(d==='g7'&&!highG7);
   sensor.classList.toggle('hidden',!(highG7||d==='sap'));
   pump.classList.toggle('hidden',!(d==='pump'||d==='sap'));
   inj.classList.toggle('hidden',d==='pump'||d==='sap');
-  // C150-7 includes ordinary SMBG costs; C152-2/CSII/SAP may have a separately billable C150 route.
-  smbg.classList.toggle('hidden',d==='libre2'||(d==='g7'&&!highG7)||d==='none');
+  // C150-7でもSMBG交付回数は入力できるようにし、包括であることを明示する。
+  smbg.classList.toggle('hidden',d==='none');
+  if(costWrap) costWrap.classList.toggle('hidden',!c1507Mode);
   const label=document.getElementById('bill-smbg-label');
   const help=document.getElementById('bill-smbg-help');
-  if(label){ label.innerHTML=(d==='pump'||d==='sap'||highG7) ? '別途算定するSMBG回数（任意）' : '月間SMBG測定回数 <span class="req">*</span>'; }
-  if(help){ help.textContent=(d==='pump'||d==='sap'||highG7) ? 'C150も別途算定する場合に入力。0回ならC150を合計しません。' : '20/30/40/60/90/120回以上の区分を判定します。'; }
+  if(label){
+    if(c1507Mode) label.innerHTML='交付・併用するSMBG回数（C150-7に包括）';
+    else if(d==='pump'||d==='sap'||highG7) label.innerHTML='別途算定するSMBG回数（任意）';
+    else label.innerHTML='月間SMBG測定回数 <span class="req">*</span>';
+  }
+  if(help){
+    if(c1507Mode) help.textContent='実際に交付する回数を入力してください。点数はC150-7の1,250点のままで、C150-1〜6は追加しません。';
+    else if(d==='pump'||d==='sap'||highG7) help.textContent='C150も別途算定する場合に入力。0回ならC150を合計しません。';
+    else help.textContent='20/30/40/60/90/120回以上の区分を判定します。';
+  }
+  const cgmCount=document.getElementById('bill-cgm-count');
+  if(cgmCount && c1507Mode){
+    const desired=d==='g7'?3:2;
+    if(!cgmCount.dataset.userEdited || cgmCount.dataset.lastDevice!==d){ cgmCount.value=desired; }
+    cgmCount.dataset.lastDevice=d;
+    cgmCount.oninput=()=>{cgmCount.dataset.userEdited='1';};
+  }
 }
 
 function billingHasInsulin(drug){
@@ -4441,6 +4478,24 @@ function billingHasInsulin(drug){
 function billingSensorPoints(v){
   return v==='2'?1320:(v==='4'?2640:3300);
 }
+function billingC1507MaterialEstimate(smbgCount){
+  const cgmCountEl=document.getElementById('bill-cgm-count');
+  const sensorCostEl=document.getElementById('bill-cgm-unit-cost');
+  const stripCostEl=document.getElementById('bill-strip-cost');
+  const lancetCostEl=document.getElementById('bill-lancet-cost');
+  if(!cgmCountEl||!sensorCostEl||!stripCostEl||!lancetCostEl) return null;
+  const cgmCount=Number(cgmCountEl.value);
+  const sensorCost=Number(sensorCostEl.value);
+  const stripCost=Number(stripCostEl.value);
+  const lancetCost=Number(lancetCostEl.value);
+  const hasAny=[sensorCostEl.value,stripCostEl.value,lancetCostEl.value].some(v=>String(v).trim()!=='');
+  if(!hasAny) return null;
+  if([cgmCount,sensorCost,stripCost,lancetCost].some(v=>!isFinite(v)||v<0)) return {error:'材料費は0以上の数値で入力してください。'};
+  const material=cgmCount*sensorCost + Math.max(0,smbgCount||0)*(stripCost+lancetCost);
+  const revenue=1250*10;
+  return {cgmCount,sensorCost,stripCost,lancetCost,material,revenue,balance:revenue-material};
+}
+
 function billingSmbg(type,count){
   count=Number(count);
   if(!isFinite(count)||count<20) return {points:0,label:'C150 血糖自己測定器加算：20回未満（加算なし）',warn:count>0?'月20回未満のためC150の回数区分に該当しません。':''};
@@ -4490,13 +4545,23 @@ function calculateDiabetesBilling(){
     if(sm.warn)warnings.push(sm.warn);
     if((drug==='glp1'||drug==='tirzepatide') && sm.points) warnings.push('GLP-1受容体作動薬／チルゼパチドの自己注射では、承認用法・用量に従い週1回以上自己注射している場合、C150はインスリン自己注射患者に準じて算定する取扱いです。');
   }else if(device==='libre2'){
-    if(hasInsulin){rows.push({code:'C150-7',name:'血糖自己測定器加算（間歇スキャン式持続血糖測定器）',points:1250,why:'FreeStyle Libre 2'});total+=1250;warnings.push('C150-7ではLibre 2以外の通常SMBGに係る費用も所定点数に含まれ、別にC150の回数区分は加えません。');}
-    else warnings.push('Libre 2のC150-7（1,250点）はインスリン自己注射（イコデク週1回を含む）を前提とするため、GLP-1/GIP-GLP-1単独ではこの区分を算定対象としていません。SMBGのC150回数区分を別途確認してください。');
+    if(hasInsulin){
+      rows.push({code:'C150-7',name:'血糖自己測定器加算（間歇スキャン式持続血糖測定器）',points:1250,why:'FreeStyle Libre 2'});total+=1250;
+      warnings.push('C150-7ではLibre 2以外の通常SMBGに係る費用も所定点数に含まれ、C150-1〜6は別に算定しません。');
+      if(isFinite(smbgCount)&&smbgCount>0){
+        warnings.push(`SMBG ${Math.round(smbgCount)}回分を交付・併用しても、C150-7は1,250点のままです。1型糖尿病で120回分を交付してもC150-6（1,490点）を追加したり、採算を理由にC150-6へ置き換えたりする前提では判定しません。`);
+      }
+    } else warnings.push('Libre 2のC150-7（1,250点）はインスリン自己注射（イコデク週1回を含む）を前提とするため、GLP-1/GIP-GLP-1単独ではこの区分を算定対象としていません。SMBGのC150回数区分を別途確認してください。');
   }else if(device==='g7'){
     const route=document.getElementById('bill-g7-route').value;
     if(route==='c1507'){
-      if(hasInsulin){rows.push({code:'C150-7',name:'血糖自己測定器加算（間歇スキャン式持続血糖測定器）',points:1250,why:'Dexcom G7をC150-7で算定'});total+=1250;warnings.push('G7をC150-7で算定する場合、通常SMBG分は別のC150回数区分として重ねて加算しません。');}
-      else warnings.push('G7のC150-7（1,250点）はインスリン自己注射（イコデク週1回を含む）を前提とするため、GLP-1/GIP-GLP-1単独ではこの区分を算定対象としていません。');
+      if(hasInsulin){
+        rows.push({code:'C150-7',name:'血糖自己測定器加算（間歇スキャン式持続血糖測定器）',points:1250,why:'Dexcom G7をC150-7で算定'});total+=1250;
+        warnings.push('G7をC150-7で算定する場合、通常SMBG分はC150-7に含まれ、C150-1〜6を別に算定しません。');
+        if(isFinite(smbgCount)&&smbgCount>0){
+          warnings.push(`SMBG ${Math.round(smbgCount)}回分を交付・併用しても、C150-7は1,250点のままです。SMBG高頻度区分へ採算上の理由で切り替える前提では判定しません。`);
+        }
+      } else warnings.push('G7のC150-7（1,250点）はインスリン自己注射（イコデク週1回を含む）を前提とするため、GLP-1/GIP-GLP-1単独ではこの区分を算定対象としていません。');
     }else{
       if(!hasInsulin){showErr('G7をC152-2で算定する経路はインスリン治療を前提とする患者要件です。自己注射薬をインスリンを含む選択肢に変更してください。');return;}
       const sv=document.getElementById('bill-sensors').value, sp=billingSensorPoints(sv);
@@ -4525,6 +4590,18 @@ function calculateDiabetesBilling(){
     if(isFinite(smbgCount)&&smbgCount>0){const sm=billingSmbg(type,smbgCount);if(sm.points){rows.push({code:'C150',name:sm.label.replace(/^C150[^ ]* /,''),points:sm.points,why:`別途SMBG ${Math.round(smbgCount)}回/月`});total+=sm.points;}if(sm.warn)warnings.push(sm.warn);}
   }
 
+  const c1507ModeForCost=(device==='libre2')||(device==='g7'&&document.getElementById('bill-g7-route')&&document.getElementById('bill-g7-route').value==='c1507');
+  let materialEstimate=null;
+  if(c1507ModeForCost && hasInsulin){
+    materialEstimate=billingC1507MaterialEstimate(smbgCount);
+    if(materialEstimate&&materialEstimate.error){showErr(materialEstimate.error);return;}
+    if(materialEstimate){
+      const bal=materialEstimate.balance;
+      const sign=bal>=0?'＋':'−';
+      warnings.push(`材料費試算：C150-7 1,250点＝12,500円相当に対し、入力したセンサー＋SMBG試験紙＋穿刺針の材料費は約${Math.round(materialEstimate.material).toLocaleString()}円、単純差額は${sign}${Math.abs(Math.round(bal)).toLocaleString()}円です。C101等の収入、人件費・物流費等は含まないため、これは血糖測定関連材料だけの参考値です。`);
+    }
+  }
+
   if(drug==='insulin-weekly') warnings.push('インスリン イコデクは、承認用法・用量に従い週1回自己注射している場合、C150では「インスリン製剤を1日1回以上自己注射」に準じて扱われます。');
   if(type==='other') warnings.push('「その他の糖尿病」は病態によりC150の高頻度区分やC152-2の患者要件が異なるため、実際の病名・要件を確認してください。');
   warnings.push('この合計は選択したC101/C150/C152/C152-2のみです。診察料、薬剤料、検査料、C151/C153等は含みません。');
@@ -4532,9 +4609,16 @@ function calculateDiabetesBilling(){
 
   const resultRows=rows.map(r=>({label:r.code,text:`${r.name}<br><span style="font-size:.74rem;color:var(--sub)">${r.why}</span>`,unit:`${r.points.toLocaleString()} 点`,wide:true}));
   resultRows.push({label:'対象項目合計',text:`${total.toLocaleString()} 点`,unit:'',wide:true});
+  const materialRows=materialEstimate ? [
+    {label:'C150-7相当額',text:'12,500 円',unit:'',wide:true},
+    {label:'入力材料費',text:`約 ${Math.round(materialEstimate.material).toLocaleString()} 円`,unit:'',wide:true},
+    {label:'材料費との単純差額',text:`${materialEstimate.balance>=0?'＋':'−'}${Math.abs(Math.round(materialEstimate.balance)).toLocaleString()} 円`,unit:'',wide:true}
+  ] : [];
   const table=rows.length?`<div style="overflow-x:auto;margin-top:.8rem"><table style="width:100%;border-collapse:collapse;font-size:.78rem"><thead><tr><th style="text-align:left;padding:.45rem;border-bottom:1px solid var(--border)">区分</th><th style="text-align:left;padding:.45rem;border-bottom:1px solid var(--border)">項目</th><th style="text-align:right;padding:.45rem;border-bottom:1px solid var(--border)">点数</th></tr></thead><tbody>${rows.map(r=>`<tr><td style="padding:.45rem;border-bottom:1px solid var(--border)">${r.code}</td><td style="padding:.45rem;border-bottom:1px solid var(--border)">${r.name}</td><td style="padding:.45rem;border-bottom:1px solid var(--border);text-align:right;font-weight:700">${r.points.toLocaleString()}</td></tr>`).join('')}</tbody></table></div>`:'';
   const html=`<strong>${typeText}／${drugText}</strong><br>選択条件から算定候補を整理しました。${table}<br><strong>注意事項</strong><br>${warnings.map(x=>'・'+x).join('<br>')}`;
-  renderResult({sections:[{title:'算定候補（令和8年度）',results:resultRows}],interpretation:{cls:warnings.some(x=>x.includes('要件')||x.includes('対象としていません'))?'brd':'ok',html}});
+  const sections=[{title:'算定候補（令和8年度）',results:resultRows}];
+  if(materialRows.length) sections.push({title:'C150-7 材料費の参考試算',results:materialRows});
+  renderResult({sections,interpretation:{cls:warnings.some(x=>x.includes('要件')||x.includes('対象としていません')||x.includes('包括'))?'brd':'ok',html}});
 }
 
 function renderForm(id){
