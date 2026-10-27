@@ -4364,6 +4364,12 @@ function renderDiabetesBillingForm(){
       </div>
     </div>
 
+    <div id="bill-t1-incretin-warning" class="interp hi hidden" style="margin:.15rem 0 .9rem;">
+      <strong>⚠️ 1型糖尿病では注射薬を確認してください</strong><br>
+      GLP-1受容体作動薬およびGIP/GLP-1受容体作動薬は、<strong>1型糖尿病の糖尿病治療薬としては適応外</strong>です。この保険算定画面で1型糖尿病を選択している場合は、自己注射薬の選択をインスリン／インスリンポンプ等へ修正してください。<br>
+      <span style="font-size:.78rem">※肥満症など別の承認適応でGLP-1系薬剤を使用している場合でも、その薬剤を「1型糖尿病の自己注射薬」として本画面のC101/C150算定根拠には使用しません。</span>
+    </div>
+
     <div id="bill-pregnancy-wrap" class="fields hidden">
       <div class="field"><label>妊娠中のC150/C101-3対象要件 <span class="req">*</span></label>
         <select id="bill-pregnancy-eligible" onchange="updateDiabetesBillingUI()" style="width:100%;padding:.62rem .8rem;font-size:.92rem;border:1.5px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;">
@@ -4440,7 +4446,7 @@ function renderDiabetesBillingForm(){
         </select>
       </div>
     </div>
-    <div class="limit-guide"><strong>この画面で扱う主な項目：</strong>C101、C101-3、C150、C152、C152-2。注入器加算（C151）、注入器用注射針加算（C153）、薬剤料・診察料・検査料などは合計に含めません。<br><strong style="color:#b91c1c">2型糖尿病一般：</strong>SMBG 90回・120回区分は算定できません。90回/120回を選んだ場合は算定不可と表示し、SMBG回数区分として請求するなら60回以下への変更を促します。<br><strong>妊娠中の糖尿病／妊娠糖尿病：</strong>周産期合併症リスクが高くSMBGが必要な所定要件を満たす場合、90回・120回区分も対象です。<br><strong>重要：</strong>C150-7（Libre 2／G7）を算定する場合、通常SMBGは所定点数に含まれ、別にC150-1〜6を算定しません。算定区分は医療機関の採算ではなく、実際に使用した機器・患者要件・施設基準に基づいて選択してください。</div>`;
+    <div class="limit-guide"><strong>この画面で扱う主な項目：</strong>C101、C101-3、C150、C152、C152-2。注入器加算（C151）、注入器用注射針加算（C153）、薬剤料・診察料・検査料などは合計に含めません。<br><strong style="color:#b91c1c">2型糖尿病一般：</strong>SMBG 90回・120回区分は算定できません。90回/120回を選んだ場合は算定不可と表示し、SMBG回数区分として請求するなら60回以下への変更を促します。<br><strong>妊娠中の糖尿病／妊娠糖尿病：</strong>周産期合併症リスクが高くSMBGが必要な所定要件を満たす場合、90回・120回区分も対象です。<br><strong style="color:#b91c1c">1型糖尿病とGLP-1系薬剤：</strong>GLP-1受容体作動薬／GIP・GLP-1受容体作動薬は、1型糖尿病の糖尿病治療薬としては適応外です。選択された場合は算定を行わず、注射薬を確認するよう警告します。<br><strong>重要：</strong>C150-7（Libre 2／G7）を算定する場合、通常SMBGは所定点数に含まれ、別にC150-1〜6を算定しません。算定区分は医療機関の採算ではなく、実際に使用した機器・患者要件・施設基準に基づいて選択してください。</div>`;
   updateDiabetesBillingUI();
 }
 
@@ -4460,7 +4466,10 @@ function updateDiabetesBillingUI(){
   const inj=document.getElementById('bill-injection-wrap');
   const costWrap=document.getElementById('bill-c1507-cost-wrap');
   const pregWrap=document.getElementById('bill-pregnancy-wrap');
+  const t1IncretinWarning=document.getElementById('bill-t1-incretin-warning');
+  const t1Incretin = type==='t1' && (drug==='glp1'||drug==='tirzepatide'||drug==='insulin-combo');
   if(pregWrap) pregWrap.classList.toggle('hidden',type!=='pregnancy');
+  if(t1IncretinWarning) t1IncretinWarning.classList.toggle('hidden',!t1Incretin);
   g7.classList.toggle('hidden',d!=='g7');
   const highG7=d==='g7' && route && route.value==='c1522';
   const c1507Mode=d==='libre2'||(d==='g7'&&!highG7);
@@ -4555,6 +4564,13 @@ function calculateDiabetesBilling(){
   const rows=[];
   const warnings=[];
   let total=0;
+
+  if(type==='t1' && (drug==='glp1'||drug==='tirzepatide'||drug==='insulin-combo')){
+    showErr('【適応外】1型糖尿病に対する糖尿病治療薬としてGLP-1受容体作動薬／GIP・GLP-1受容体作動薬は適応外です。自己注射薬の選択を確認し、インスリン／インスリンポンプ等の適切な項目へ変更してください。');
+    const warn=document.getElementById('bill-t1-incretin-warning');
+    if(warn){ warn.classList.remove('hidden'); warn.scrollIntoView({behavior:'smooth',block:'center'}); }
+    return;
+  }
 
   // C101 / C101-3
   if(drug==='none-pregnancy'){
